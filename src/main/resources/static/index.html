@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="theme-color" content="#0969da"/>
+  <title>VoltBook — EV Charging</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"/>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            accent:  { DEFAULT: '#0969da', dark: '#0860ca', light: '#ddf4ff' },
+            success: { DEFAULT: '#1a7f37', light: '#d1f0db' },
+            warning: { DEFAULT: '#9a6700', light: '#fff8c5' },
+            danger:  { DEFAULT: '#cf222e', light: '#ffdce0' },
+            ev: { text: '#24292f', sub: '#57606a', muted: '#8c959f', border: '#d0d7de', bg: '#f6f8fa', white: '#ffffff', hover: '#f0f3f7' },
+          },
+          fontFamily: { sans: ['Outfit', 'system-ui', 'sans-serif'], mono: ['JetBrains Mono', 'ui-monospace', 'monospace'] },
+        }
+      }
+    }
+  </script>
+</head>
+<body class="pt-14 min-h-screen bg-ev-bg font-sans text-ev-text">
+
+<nav class="navbar">
+  <div class="nav-inner">
+    <a class="nav-logo" href="/">VoltBook</a>
+    <ul class="nav-links" id="nav-links" role="menubar"></ul>
+  </div>
+</nav>
+
+<main class="max-w-2xl mx-auto px-4 py-20 text-center">
+
+  <h1 class="text-3xl font-semibold text-ev-text mb-3 tracking-tight">EV Charging, Made Simple.</h1>
+  <p class="text-ev-sub text-base mb-8 max-w-md mx-auto">
+    Book a charging slot at one of our Thessaloniki stations. Fast, reliable, and cloud-powered.
+  </p>
+
+  <div class="flex gap-3 flex-wrap justify-center mb-12">
+    <a href="/stations.html" class="btn btn-primary">View Charging Map</a>
+    <a href="/login.html"    class="btn btn-outline">Sign In</a>
+  </div>
+
+  <div class="grid grid-cols-3 gap-3 max-w-xs mx-auto">
+    <div class="bg-ev-white border border-ev-border rounded p-3 text-center">
+      <div class="text-xl font-semibold text-ev-text font-mono" id="stat-stations">—</div>
+      <div class="text-xs text-ev-muted mt-0.5">Stations</div>
+    </div>
+    <div class="bg-ev-white border border-ev-border rounded p-3 text-center">
+      <div class="text-xl font-semibold text-ev-text font-mono" id="stat-connectors">—</div>
+      <div class="text-xs text-ev-muted mt-0.5">Connectors</div>
+    </div>
+    <div class="bg-ev-white border border-ev-border rounded p-3 text-center">
+      <div class="text-xl font-semibold text-accent font-mono">24/7</div>
+      <div class="text-xs text-ev-muted mt-0.5">Availability</div>
+    </div>
+  </div>
+
+</main>
+
+<script src="/js/api.js"></script>
+<script src="/js/auth.js"></script>
+<script>
+  const stored = sessionStorage.getItem('user');
+  if (stored) {
+    try {
+      const u = JSON.parse(stored);
+      window.location.replace(u.role === 'ADMIN' ? '/admin.html' : '/dashboard.html');
+    } catch { sessionStorage.removeItem('user'); }
+  }
+
+  buildNav('nav-links', '/');
+
+  API.get('/api/stations')
+    .then(stations => {
+      document.getElementById('stat-stations').textContent = stations.length;
+      document.getElementById('stat-connectors').textContent =
+        stations.reduce((a, s) => a + (s.connectorCount || 0), 0);
+    })
+    .catch(() => {});
+</script>
+</body>
+</html>

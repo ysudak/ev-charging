@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>EV Charging Station Booking — API Docs</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>"
+    />
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: Inter, system-ui, -apple-system, sans-serif; }
+    </style>
+  </head>
+  <body>
+    <redoc
+      spec-url="openapi.yaml"
+      expand-responses="200,201"
+      json-sample-expand-level="2"
+      hide-hostname="false"
+      disable-search="false"
+      theme='{
+        "colors": {
+          "primary": { "main": "#1d4ed8" },
+          "text": { "primary": "#111827", "secondary": "#6b7280" }
+        },
+        "typography": {
+          "fontSize": "15px",
+          "lineHeight": "1.6",
+          "fontFamily": "Inter, system-ui, -apple-system, sans-serif",
+          "headings": { "fontFamily": "Inter, system-ui, -apple-system, sans-serif", "fontWeight": "600" },
+          "code": {
+            "fontSize": "13px",
+            "fontFamily": "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+            "color": "#1d4ed8",
+            "backgroundColor": "#f3f4f6"
+          }
+        },
+        "sidebar": {
+          "width": "280px",
+          "backgroundColor": "#f9fafb",
+          "textColor": "#374151"
+        },
+        "rightPanel": {
+          "backgroundColor": "#1f2937",
+          "width": "40%",
+          "textColor": "#f9fafb"
+        }
+      }'
+    ></redoc>
+    <script src="https://cdn.jsdelivr.net/npm/redoc/bundles/redoc.standalone.js"></script>
+  </body>
+</html>

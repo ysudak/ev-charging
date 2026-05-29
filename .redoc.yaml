@@ -1,0 +1,76 @@
+# .redoc.yaml — Redocly CLI configuration
+#
+# Build static docs:
+#   npx @redocly/cli build-docs src/main/resources/static/openapi.yaml \
+#     --output src/main/resources/static/docs.html \
+#     --config .redoc.yaml
+#
+# Lint the spec:
+#   npx @redocly/cli lint src/main/resources/static/openapi.yaml --config .redoc.yaml
+#
+# Preview with live reload:
+#   npx @redocly/cli preview-docs src/main/resources/static/openapi.yaml --config .redoc.yaml
+
+apis:
+  ev-charging-booking@v1:
+    root: src/main/resources/static/openapi.yaml
+
+theme:
+  openapi:
+    disableSearch: false
+    expandResponses: "200,201"
+    hideDownloadButton: false
+    jsonSampleExpandLevel: 2
+    sortPropsAlphabetically: false
+    showExtensions: false
+
+  colors:
+    primary:
+      main: "#1d4ed8"
+      light: "#3b82f6"
+      dark: "#1e3a8a"
+    text:
+      primary: "#111827"
+      secondary: "#6b7280"
+    border:
+      light: "#e5e7eb"
+      dark: "#d1d5db"
+    responses:
+      success:
+        color: "#065f46"
+        backgroundColor: "#d1fae5"
+      error:
+        color: "#7f1d1d"
+        backgroundColor: "#fee2e2"
+      redirect:
+        color: "#78350f"
+        backgroundColor: "#fef3c7"
+      info:
+        color: "#1e3a8a"
+        backgroundColor: "#dbeafe"
+
+  typography:
+    fontSize: "15px"
+    lineHeight: "1.6"
+    fontFamily: "Inter, system-ui, -apple-system, sans-serif"
+    headings:
+      fontFamily: "Inter, system-ui, -apple-system, sans-serif"
+      fontWeight: "600"
+    code:
+      fontSize: "13px"
+      fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
+      backgroundColor: "#f3f4f6"
+      color: "#1d4ed8"
+
+  sidebar:
+    width: "280px"
+    backgroundColor: "#f9fafb"
+    textColor: "#374151"
+    groupItems:
+      activeBackgroundColor: "#dbeafe"
+      activeTextColor: "#1d4ed8"
+
+  rightPanel:
+    backgroundColor: "#1f2937"
+    width: "40%"
+    textColor: "#f9fafb"

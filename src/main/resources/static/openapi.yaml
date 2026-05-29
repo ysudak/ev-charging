@@ -1,0 +1,972 @@
+openapi: 3.0.3
+
+info:
+  title: EV Charging Station Booking API
+  version: 1.0.0
+  description: |
+    REST API for the EV Charging Station Booking System.
+
+    **Authentication** is session-based. Call `POST /api/auth/login` to receive a
+    `JSESSIONID` cookie; include it in every subsequent request.
+
+    **Roles**
+    | Role   | Can do                                                         |
+    |--------|----------------------------------------------------------------|
+    | DRIVER | Register, log in, book connectors, manage own bookings.        |
+    | ADMIN  | Everything a driver can do, plus manage stations, connectors, and all bookings. |
+
+servers:
+  - url: http://localhost:8080
+    description: Local development
+  - url: https://ev-charging-booking.herokuapp.com
+    description: Production (Heroku)
+
+tags:
+  - name: Auth
+    description: Login, logout, registration, and current-user lookup.
+  - name: Stations
+    description: Charging station management. GET endpoints are public; POST/PUT/DELETE require **ADMIN**.
+  - name: Connectors
+    description: Connector management per station. GET endpoints are public; POST/PUT/DELETE require **ADMIN**.
+  - name: Bookings
+    description: Booking lifecycle for the authenticated driver.
+  - name: Admin
+    description: System-wide oversight endpoints, all restricted to **ADMIN**.
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Paths
+# ─────────────────────────────────────────────────────────────────────────────
+paths:
+
+  # ── Auth ──────────────────────────────────────────────────────────────────
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      operationId: login
+      summary: Login
+      description: |
+        Authenticates the user and creates an HTTP session.
+        The response sets a `JSESSIONID` cookie which must be included in all
+        subsequent requests to protected endpoints.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              username: alice
+              password: secret123
+      responses:
+        '200':
+          description: Login successful — returns the authenticated user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: Invalid username or password.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InlineError'
+              example:
+                error: "Invalid username or password."
+
+  /api/auth/logout:
+    post:
+      tags: [Auth]
+      operationId: logout
+      summary: Logout
+      description: Invalidates the current session. Subsequent requests with the same cookie will be treated as unauthenticated.
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Session invalidated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InlineMessage'
+              example:
+                message: "Logged out successfully."
+
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      operationId: getCurrentUser
+      summary: Get current user
+      description: Returns the profile of the currently authenticated user.
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: The authenticated user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          description: No active session.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InlineError'
+              example:
+                error: "Not authenticated."
+
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      operationId: register
+      summary: Register
+      description: |
+        Creates a new user account with the **DRIVER** role.
+        Self-registration never grants the ADMIN role.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            example:
+              username: newdriver
+              password: pass1234
+      responses:
+        '201':
+          description: Account created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  # ── Stations ──────────────────────────────────────────────────────────────
+
+  /api/stations:
+    get:
+      tags: [Stations]
+      operationId: listStations
+      summary: List all stations
+      description: Returns every charging station with connector counts and today's booking count. No authentication required.
+      responses:
+        '200':
+          description: Array of charging stations.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StationResponse'
+    post:
+      tags: [Stations]
+      operationId: createStation
+      summary: Create a station
+      description: Adds a new charging station. Requires **ADMIN** role.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StationRequest'
+            example:
+              name: "City Centre Hub"
+              address: "1 High Street, London"
+              latitude: 51.5074
+              longitude: -0.1278
+              description: "Underground car park, level 2."
+      responses:
+        '201':
+          description: Station created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/stations/{id}:
+    get:
+      tags: [Stations]
+      operationId: getStation
+      summary: Get a station
+      description: Returns a single charging station by ID. No authentication required.
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: The charging station.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StationResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Stations]
+      operationId: updateStation
+      summary: Update a station
+      description: Updates name, address, coordinates, or description of an existing station. Requires **ADMIN** role.
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StationRequest'
+      responses:
+        '200':
+          description: Updated station.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StationResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Stations]
+      operationId: deleteStation
+      summary: Delete a station
+      description: Permanently deletes a station and all its connectors. Requires **ADMIN** role.
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '204':
+          description: Station deleted — no content returned.
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── Connectors ────────────────────────────────────────────────────────────
+
+  /api/stations/{stationId}/connectors:
+    get:
+      tags: [Connectors]
+      operationId: listConnectors
+      summary: List connectors for a station
+      description: Returns all connectors that belong to the specified station. No authentication required.
+      parameters:
+        - name: stationId
+          in: path
+          required: true
+          description: ID of the parent station.
+          schema:
+            type: integer
+            format: int64
+            example: 1
+      responses:
+        '200':
+          description: Array of connectors.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ConnectorResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Connectors]
+      operationId: createConnector
+      summary: Add a connector to a station
+      description: Creates a new connector for the given station. Requires **ADMIN** role.
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: stationId
+          in: path
+          required: true
+          description: ID of the parent station.
+          schema:
+            type: integer
+            format: int64
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectorRequest'
+            example:
+              connectorType: "CCS2"
+              powerKw: 150
+      responses:
+        '201':
+          description: Connector created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/connectors/{id}:
+    get:
+      tags: [Connectors]
+      operationId: getConnector
+      summary: Get a connector
+      description: Returns a single connector by ID. No authentication required.
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: The connector.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Connectors]
+      operationId: updateConnector
+      summary: Update a connector
+      description: Updates the type and power rating of an existing connector. Requires **ADMIN** role.
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectorRequest'
+      responses:
+        '200':
+          description: Updated connector.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectorResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Connectors]
+      operationId: deleteConnector
+      summary: Delete a connector
+      description: Permanently removes a connector. Requires **ADMIN** role.
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '204':
+          description: Connector deleted — no content returned.
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/connectors/{id}/booked-times:
+    get:
+      tags: [Connectors]
+      operationId: getBookedTimes
+      summary: Get booked time windows
+      description: |
+        Returns all occupied time slots for a connector on a given calendar date.
+        Used by the booking UI to visualise availability before creating a booking.
+        No authentication required.
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+        - name: date
+          in: query
+          required: true
+          description: Date to check, in ISO-8601 format (`YYYY-MM-DD`).
+          schema:
+            type: string
+            format: date
+            example: "2025-06-15"
+      responses:
+        '200':
+          description: Array of occupied time windows for that date.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BookedTimeResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── Bookings ──────────────────────────────────────────────────────────────
+
+  /api/bookings:
+    get:
+      tags: [Bookings]
+      operationId: listMyBookings
+      summary: List my bookings
+      description: Returns all bookings owned by the currently authenticated driver.
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Array of the driver's bookings.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BookingResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Bookings]
+      operationId: createBooking
+      summary: Create a booking
+      description: |
+        Books a connector time slot for the authenticated driver.
+        Returns **409 Conflict** if the slot overlaps with an existing active booking.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingRequest'
+            example:
+              connectorId: 3
+              bookingDate: "2025-06-20"
+              startTime: "10:00:00"
+              endTime: "11:30:00"
+      responses:
+        '201':
+          description: Booking created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /api/bookings/{id}:
+    get:
+      tags: [Bookings]
+      operationId: getBooking
+      summary: Get a booking
+      description: Returns a single booking by ID. Drivers can only retrieve their own bookings.
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: The booking.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [Bookings]
+      operationId: rescheduleBooking
+      summary: Reschedule a booking
+      description: |
+        Moves an existing booking to a new date and time window on the same connector.
+        Returns **409 Conflict** if the new slot overlaps with another active booking.
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RescheduleRequest'
+            example:
+              bookingDate: "2025-06-21"
+              startTime: "14:00:00"
+              endTime: "15:00:00"
+      responses:
+        '200':
+          description: Booking rescheduled — returns the updated booking.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      tags: [Bookings]
+      operationId: cancelBooking
+      summary: Cancel a booking
+      description: |
+        Cancels a booking. Drivers may only cancel their own future bookings.
+        Admins may cancel any booking regardless of owner or status.
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: "Booking cancelled — returns the updated booking with status: CANCELLED."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── Admin ─────────────────────────────────────────────────────────────────
+
+  /api/admin/users:
+    get:
+      tags: [Admin]
+      operationId: adminListUsers
+      summary: List all users
+      description: Returns every registered user in the system. Requires **ADMIN** role.
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Array of all users.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/admin/bookings:
+    get:
+      tags: [Admin]
+      operationId: adminListBookings
+      summary: List all bookings
+      description: Returns every booking in the system regardless of owner. Requires **ADMIN** role.
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Array of all bookings.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BookingResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/admin/bookings/{id}:
+    delete:
+      tags: [Admin]
+      operationId: adminCancelBooking
+      summary: Cancel any booking
+      description: Allows an admin to cancel any booking regardless of its owner or status. Requires **ADMIN** role.
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: "Booking cancelled — returns the updated booking with status: CANCELLED."
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Components
+# ─────────────────────────────────────────────────────────────────────────────
+components:
+
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: JSESSIONID
+      description: Session cookie obtained after a successful `POST /api/auth/login`.
+
+  parameters:
+    IdPath:
+      name: id
+      in: path
+      required: true
+      description: Resource ID.
+      schema:
+        type: integer
+        format: int64
+        example: 1
+
+  responses:
+    BadRequest:
+      description: Validation failed or request is malformed.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 400
+            error: "Bad Request"
+            message: "must not be blank"
+            timestamp: "2025-06-15T09:30:00"
+    Unauthorized:
+      description: No active session — authentication required.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 401
+            error: "Unauthorized"
+            message: "Not authenticated."
+            timestamp: "2025-06-15T09:30:00"
+    Forbidden:
+      description: Authenticated but lacks the required role.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 403
+            error: "Forbidden"
+            message: "You do not have permission to perform this action."
+            timestamp: "2025-06-15T09:30:00"
+    NotFound:
+      description: Resource not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 404
+            error: "Not Found"
+            message: "Station not found with id: 99"
+            timestamp: "2025-06-15T09:30:00"
+    Conflict:
+      description: Resource conflict — e.g. booking time overlap or duplicate username.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: 409
+            error: "Conflict"
+            message: "Connector 3 is already booked between 10:00 and 11:30 on 2025-06-20."
+            timestamp: "2025-06-15T09:30:00"
+
+  schemas:
+
+    # ── Request bodies ───────────────────────────────────────────────────────
+
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+          example: alice
+        password:
+          type: string
+          format: password
+          minLength: 4
+          maxLength: 72
+          example: secret123
+
+    RegisterRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+          example: newdriver
+        password:
+          type: string
+          format: password
+          minLength: 4
+          maxLength: 72
+          example: pass1234
+
+    StationRequest:
+      type: object
+      required: [name, address, latitude, longitude]
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          example: "City Centre Hub"
+        address:
+          type: string
+          maxLength: 200
+          example: "1 High Street, London"
+        latitude:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+          example: 51.5074
+        longitude:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+          example: -0.1278
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+          example: "Underground car park, level 2."
+
+    ConnectorRequest:
+      type: object
+      required: [connectorType, powerKw]
+      properties:
+        connectorType:
+          type: string
+          example: "CCS2"
+        powerKw:
+          type: integer
+          minimum: 1
+          example: 150
+
+    BookingRequest:
+      type: object
+      required: [connectorId, bookingDate, startTime, endTime]
+      properties:
+        connectorId:
+          type: integer
+          format: int64
+          example: 3
+        bookingDate:
+          type: string
+          format: date
+          example: "2025-06-20"
+        startTime:
+          type: string
+          description: ISO-8601 local time (`HH:mm:ss`).
+          example: "10:00:00"
+        endTime:
+          type: string
+          description: ISO-8601 local time (`HH:mm:ss`). Must be after `startTime`.
+          example: "11:30:00"
+
+    RescheduleRequest:
+      type: object
+      required: [bookingDate, startTime, endTime]
+      properties:
+        bookingDate:
+          type: string
+          format: date
+          example: "2025-06-21"
+        startTime:
+          type: string
+          description: ISO-8601 local time (`HH:mm:ss`).
+          example: "14:00:00"
+        endTime:
+          type: string
+          description: ISO-8601 local time (`HH:mm:ss`). Must be after `startTime`.
+          example: "15:00:00"
+
+    # ── Response bodies ──────────────────────────────────────────────────────
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        username:
+          type: string
+          example: alice
+        role:
+          type: string
+          enum: [DRIVER, ADMIN]
+          example: DRIVER
+
+    StationResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        name:
+          type: string
+          example: "City Centre Hub"
+        address:
+          type: string
+          example: "1 High Street, London"
+        latitude:
+          type: number
+          format: double
+          example: 51.5074
+        longitude:
+          type: number
+          format: double
+          example: -0.1278
+        description:
+          type: string
+          nullable: true
+          example: "Underground car park, level 2."
+        connectorCount:
+          type: integer
+          example: 4
+        todayBookingCount:
+          type: integer
+          example: 2
+
+    ConnectorResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 3
+        stationId:
+          type: integer
+          format: int64
+          example: 1
+        connectorType:
+          type: string
+          example: "CCS2"
+        powerKw:
+          type: integer
+          example: 150
+
+    BookingResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 42
+        userId:
+          type: integer
+          format: int64
+          example: 1
+        username:
+          type: string
+          example: alice
+        connectorId:
+          type: integer
+          format: int64
+          example: 3
+        connectorType:
+          type: string
+          example: "CCS2"
+        stationId:
+          type: integer
+          format: int64
+          example: 1
+        stationName:
+          type: string
+          example: "City Centre Hub"
+        bookingDate:
+          type: string
+          format: date
+          example: "2025-06-20"
+        startTime:
+          type: string
+          example: "10:00:00"
+        endTime:
+          type: string
+          example: "11:30:00"
+        status:
+          type: string
+          enum: [ACTIVE, CANCELLED, COMPLETED]
+          example: ACTIVE
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-06-15T09:30:00"
+
+    BookedTimeResponse:
+      type: object
+      properties:
+        startTime:
+          type: string
+          example: "10:00:00"
+        endTime:
+          type: string
+          example: "11:30:00"
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+          example: 404
+        error:
+          type: string
+          example: "Not Found"
+        message:
+          type: string
+          example: "Station not found with id: 99"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2025-06-15T09:30:00"
+
+    InlineError:
+      type: object
+      description: Simple error wrapper used by a few auth endpoints.
+      properties:
+        error:
+          type: string
+          example: "Invalid username or password."
+
+    InlineMessage:
+      type: object
+      description: Simple success message wrapper.
+      properties:
+        message:
+          type: string
+          example: "Logged out successfully."

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="theme-color" content="#0969da"/>
+  <title>VoltBook — My Bookings</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"/>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            accent:  { DEFAULT: '#0969da', dark: '#0860ca', light: '#ddf4ff' },
+            success: { DEFAULT: '#1a7f37', light: '#d1f0db' },
+            warning: { DEFAULT: '#9a6700', light: '#fff8c5' },
+            danger:  { DEFAULT: '#cf222e', light: '#ffdce0' },
+            ev: { text: '#24292f', sub: '#57606a', muted: '#8c959f', border: '#d0d7de', bg: '#f6f8fa', white: '#ffffff', hover: '#f0f3f7' },
+          },
+          fontFamily: { sans: ['Outfit', 'system-ui', 'sans-serif'], mono: ['JetBrains Mono', 'ui-monospace', 'monospace'] },
+        }
+      }
+    }
+  </script>
+</head>
+<body class="pt-14 min-h-screen bg-ev-bg font-sans text-ev-text">
+
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<nav class="navbar">
+  <div class="nav-inner">
+    <a class="nav-logo" href="/">VoltBook</a>
+    <ul class="nav-links" id="nav-links" role="menubar"></ul>
+    <button class="nav-hamburger" id="nav-hamburger"
+            aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<main id="main-content" class="max-w-5xl mx-auto px-4 py-6 md:px-6 md:py-8">
+
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+    <div>
+      <h1 class="text-xl font-semibold text-ev-text">My Bookings</h1>
+      <p class="text-sm text-ev-sub mt-0.5">All your current and past reservations.</p>
+    </div>
+    <a href="/stations.html" class="btn btn-primary">New Booking</a>
+  </div>
+
+  <!-- Filter pills -->
+  <div class="flex gap-2 mb-5 overflow-x-auto pb-1" style="scrollbar-width:none;">
+    <button class="filter-pill active" data-status="ALL">All</button>
+    <button class="filter-pill" data-status="CONFIRMED">Confirmed</button>
+    <button class="filter-pill" data-status="CANCELLED">Cancelled</button>
+    <button class="filter-pill" data-status="COMPLETED">Completed</button>
+  </div>
+
+  <div id="alert-area"></div>
+
+  <div id="bookings-container">
+    <div class="bg-ev-white border border-ev-border rounded p-4">
+      <div class="spinner"></div>
+    </div>
+  </div>
+
+</main>
+
+<div class="toast-container" role="status" aria-live="polite" aria-label="Notifications"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/bookings.js"></script>
+<script>
+  requireAuth();
+  buildNav('nav-links', '/bookings.html');
+  initHamburger();
+
+  let currentFilter = 'ALL';
+  let allBookings   = [];
+
+  document.querySelectorAll('.filter-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      currentFilter = pill.dataset.status;
+      renderFiltered();
+    });
+  });
+
+  function renderFiltered() {
+    const filtered = currentFilter === 'ALL'
+      ? allBookings
+      : allBookings.filter(b => b.status === currentFilter);
+
+    const container = document.getElementById('bookings-container');
+    if (!filtered.length) {
+      container.innerHTML = `
+        <div class="bg-ev-white border border-ev-border rounded overflow-hidden">
+          <div class="empty-state">
+            <h3>No bookings found</h3>
+            <p>${currentFilter === 'ALL' ? "You haven't made any bookings yet." : `No ${currentFilter.toLowerCase()} bookings.`}</p>
+            <a href="/stations.html" class="btn btn-primary">Browse Stations</a>
+          </div>
+        </div>`;
+      return;
+    }
+    container.innerHTML = `<div class="rounded overflow-hidden">${renderBookingsTable(filtered, true, false, true)}</div>`;
+    attachCancelListeners();
+    attachRescheduleListeners();
+  }
+
+  function loadMyBookings() {
+    document.getElementById('bookings-container').innerHTML =
+      '<div class="bg-ev-white border border-ev-border rounded p-4"><div class="spinner"></div></div>';
+    API.get('/api/bookings').then(bookings => {
+      allBookings = bookings;
+      renderFiltered();
+    }).catch(() => {
+      document.getElementById('bookings-container').innerHTML =
+        '<div class="alert alert-error">Failed to load bookings.</div>';
+    });
+  }
+
+  function attachCancelListeners() {
+    document.querySelectorAll('.cancel-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id  = btn.dataset.id;
+        const row = btn.closest('tr');
+        if (!row) return;
+        document.querySelectorAll('.cancel-confirm-row').forEach(r => r.remove());
+        const confirmRow = document.createElement('tr');
+        confirmRow.innerHTML = `
+          <td colspan="99" class="cancel-confirm-row">
+            <span>Cancel booking <strong>#${id}</strong>? This cannot be undone.</span>
+            <div class="confirm-actions">
+              <button class="btn btn-danger btn-sm confirm-yes" data-id="${id}">Yes, Cancel</button>
+              <button class="btn btn-ghost btn-sm confirm-no">Keep</button>
+            </div>
+          </td>`;
+        row.after(confirmRow);
+        confirmRow.querySelector('.confirm-no').addEventListener('click', () => confirmRow.remove());
+        confirmRow.querySelector('.confirm-yes').addEventListener('click', async function () {
+          this.disabled = true; this.textContent = 'Cancelling…';
+          try {
+            await API.delete(`/api/bookings/${id}`);
+            showToast('Booking cancelled.', 'success');
+            loadMyBookings();
+          } catch (err) {
+            showToast(err.message || 'Failed to cancel.', 'error');
+            confirmRow.remove(); btn.disabled = false;
+          }
+        });
+      });
+    });
+  }
+
+  function attachRescheduleListeners() {
+    document.querySelectorAll('.reschedule-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id  = btn.dataset.id;
+        const row = btn.closest('tr');
+        if (!row) return;
+        document.querySelectorAll('.reschedule-row, .cancel-confirm-row').forEach(r => r.remove());
+        const today    = new Date().toISOString().split('T')[0];
+        const tmrw     = new Date(); tmrw.setDate(tmrw.getDate() + 1);
+        const tomorrow = tmrw.toISOString().split('T')[0];
+        const rescheduleRow = document.createElement('tr');
+        rescheduleRow.className = 'reschedule-row';
+        rescheduleRow.innerHTML = `
+          <td colspan="99" class="reschedule-row-cell">
+            <span style="font-weight:600; font-size:.875rem;">Reschedule booking <strong>#${id}</strong></span>
+            <div class="reschedule-fields">
+              <div class="form-group" style="margin:0;">
+                <label class="form-label" style="font-size:.75rem;">New Date</label>
+                <input type="date" class="form-control rs-date" min="${today}" value="${tomorrow}" style="height:32px;"/>
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label class="form-label" style="font-size:.75rem;">Start</label>
+                <input type="time" class="form-control rs-start" value="09:00" style="height:32px;"/>
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label class="form-label" style="font-size:.75rem;">End</label>
+                <input type="time" class="form-control rs-end" value="11:00" style="height:32px;"/>
+              </div>
+              <div class="confirm-actions" style="margin-top:16px;">
+                <button class="btn btn-primary btn-sm rs-confirm" data-id="${id}">Confirm</button>
+                <button class="btn btn-ghost btn-sm rs-cancel">Discard</button>
+              </div>
+            </div>
+          </td>`;
+        row.after(rescheduleRow);
+        rescheduleRow.querySelector('.rs-cancel').addEventListener('click', () => rescheduleRow.remove());
+        rescheduleRow.querySelector('.rs-confirm').addEventListener('click', async function () {
+          const date = rescheduleRow.querySelector('.rs-date').value;
+          const start = rescheduleRow.querySelector('.rs-start').value;
+          const end   = rescheduleRow.querySelector('.rs-end').value;
+          if (!date || !start || !end) { showToast('Please fill in all fields.', 'error'); return; }
+          this.disabled = true; this.textContent = 'Saving…';
+          try {
+            await API.put(`/api/bookings/${id}`, { bookingDate: date, startTime: start + ':00', endTime: end + ':00' });
+            showToast('Booking rescheduled!', 'success');
+            loadMyBookings();
+          } catch (err) {
+            showToast(err.message || 'Failed to reschedule.', 'error');
+            this.disabled = false; this.textContent = 'Confirm';
+          }
+        });
+      });
+    });
+  }
+
+  loadMyBookings();
+
+  function initHamburger() {
+    const btn = document.getElementById('nav-hamburger');
+    const navbar = document.querySelector('.navbar');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      btn.classList.toggle('open');
+      navbar.classList.toggle('menu-open');
+      btn.setAttribute('aria-expanded', navbar.classList.contains('menu-open'));
+      document.body.style.overflow = navbar.classList.contains('menu-open') ? 'hidden' : '';
+    });
+    document.getElementById('nav-links').addEventListener('click', e => {
+      if (e.target.closest('a, button')) {
+        btn.classList.remove('open'); navbar.classList.remove('menu-open');
+        btn.setAttribute('aria-expanded', 'false'); document.body.style.overflow = '';
+      }
+    });
+  }
+</script>
+</body>
+</html>

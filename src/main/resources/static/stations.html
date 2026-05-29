@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="theme-color" content="#0969da"/>
+  <title>VoltBook — Stations</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            accent:  { DEFAULT: '#0969da', dark: '#0860ca', light: '#ddf4ff' },
+            success: { DEFAULT: '#1a7f37', light: '#d1f0db' },
+            warning: { DEFAULT: '#9a6700', light: '#fff8c5' },
+            danger:  { DEFAULT: '#cf222e', light: '#ffdce0' },
+            ev: { text: '#24292f', sub: '#57606a', muted: '#8c959f', border: '#d0d7de', bg: '#f6f8fa', white: '#ffffff', hover: '#f0f3f7' },
+          },
+          fontFamily: { sans: ['Outfit', 'system-ui', 'sans-serif'], mono: ['JetBrains Mono', 'ui-monospace', 'monospace'] },
+        }
+      }
+    }
+  </script>
+  <style>
+    .stations-page   { padding-top: var(--nav-height); height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+    .stations-layout { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .map-container   { height: 45vh; min-height: 260px; flex-shrink: 0; }
+    #map             { width: 100%; height: 100%; z-index: 0; }
+    .station-detail-panel { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; background: var(--bg-primary); }
+    .station-empty-state  { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 36px 20px; text-align: center; color: var(--text-muted); gap: 8px; }
+    .station-empty-state p { font-size: 0.875rem; max-width: 220px; line-height: 1.5; }
+    .station-list, #station-list { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px 14px; }
+    .connector-panel { padding: 14px; }
+    #panel-station-name { font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
+    @media (min-width: 768px) {
+      .stations-layout    { flex-direction: row; }
+      .map-container      { height: 100%; width: 55%; flex-shrink: 0; }
+      .station-detail-panel { width: 45%; border-left: 1px solid var(--border); }
+    }
+    @media (min-width: 1024px) {
+      .map-container        { width: 65%; }
+      .station-detail-panel { width: 35%; }
+    }
+  </style>
+</head>
+<body class="stations-page font-sans text-ev-text">
+
+<a href="#map" class="skip-link">Skip to map</a>
+
+<nav class="navbar">
+  <div class="nav-inner">
+    <a class="nav-logo" href="/">VoltBook</a>
+    <ul class="nav-links" id="nav-links" role="menubar"></ul>
+    <button class="nav-hamburger" id="nav-hamburger"
+            aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<div class="stations-layout">
+
+  <div class="map-container">
+    <div id="map" role="application" aria-label="EV charging stations map"></div>
+  </div>
+
+  <div class="station-detail-panel" id="station-detail-panel">
+
+    <div class="station-empty-state" id="detail-default">
+      <p>Select a station on the map or from the list below to view connectors and book a slot.</p>
+    </div>
+
+    <div id="station-list" class="station-list">
+      <div class="spinner"></div>
+    </div>
+
+    <div id="connector-panel" class="connector-panel" style="display:none;">
+      <h3 id="panel-station-name"></h3>
+      <div id="connector-list"><div class="spinner"></div></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Booking modal -->
+<div class="booking-modal-overlay" id="booking-modal" role="dialog" aria-modal="true" aria-labelledby="modal-heading">
+  <div class="booking-modal">
+
+    <div class="modal-header">
+      <h2 class="modal-title" id="modal-heading">Book a Charging Slot</h2>
+      <button class="modal-close" id="cancel-modal-btn" aria-label="Close modal">&#x2715;</button>
+    </div>
+
+    <div id="modal-alert"></div>
+
+    <div class="booking-summary-card">
+      <div id="modal-connector-info"></div>
+    </div>
+
+    <div id="week-strip" class="mb-4">
+      <p class="text-xs font-semibold text-ev-sub uppercase tracking-wide mb-2">Select a date</p>
+      <div id="week-strip-days" class="week-strip"></div>
+    </div>
+
+    <div id="booked-times-section" style="display:none;" class="mb-4">
+      <p class="text-xs font-semibold text-ev-sub uppercase tracking-wide mb-1.5">Already booked on this date</p>
+      <div id="booked-times-list"></div>
+    </div>
+
+    <div class="form-group" style="display:none;">
+      <label class="form-label" for="book-date">Date</label>
+      <input type="date" id="book-date" class="form-control" aria-required="true"/>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3">
+      <div class="form-group">
+        <label class="form-label" for="book-start">Start Time</label>
+        <input type="time" id="book-start" class="form-control" value="09:00" aria-required="true"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="book-end">End Time</label>
+        <input type="time" id="book-end" class="form-control" value="11:00" aria-required="true"/>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="confirm-book-btn">Confirm Booking</button>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast-container" role="status" aria-live="polite" aria-label="Notifications"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/map.js"></script>
+<script src="/js/stations.js"></script>
+<script>
+  const connectorPanel = document.getElementById('connector-panel');
+  const stationListEl  = document.getElementById('station-list');
+  const defaultState   = document.getElementById('detail-default');
+
+  const obs = new MutationObserver(() => {
+    const visible = connectorPanel.style.display !== 'none';
+    stationListEl.style.display = visible ? 'none' : 'flex';
+    if (defaultState) defaultState.style.display = visible ? 'none' : 'flex';
+  });
+  obs.observe(connectorPanel, { attributes: true, attributeFilter: ['style'] });
+
+  (function () {
+    const btn    = document.getElementById('nav-hamburger');
+    const navbar = document.querySelector('.navbar');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      btn.classList.toggle('open');
+      navbar.classList.toggle('menu-open');
+      btn.setAttribute('aria-expanded', navbar.classList.contains('menu-open'));
+      document.body.style.overflow = navbar.classList.contains('menu-open') ? 'hidden' : '';
+    });
+    document.getElementById('nav-links').addEventListener('click', e => {
+      if (e.target.closest('a, button')) {
+        btn.classList.remove('open'); navbar.classList.remove('menu-open');
+        btn.setAttribute('aria-expanded', 'false'); document.body.style.overflow = '';
+      }
+    });
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="theme-color" content="#0969da"/>
+  <title>VoltBook — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"/>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            accent:  { DEFAULT: '#0969da', dark: '#0860ca', light: '#ddf4ff' },
+            success: { DEFAULT: '#1a7f37', light: '#d1f0db' },
+            warning: { DEFAULT: '#9a6700', light: '#fff8c5' },
+            danger:  { DEFAULT: '#cf222e', light: '#ffdce0' },
+            ev: { text: '#24292f', sub: '#57606a', muted: '#8c959f', border: '#d0d7de', bg: '#f6f8fa', white: '#ffffff', hover: '#f0f3f7' },
+          },
+          fontFamily: { sans: ['Outfit', 'system-ui', 'sans-serif'], mono: ['JetBrains Mono', 'ui-monospace', 'monospace'] },
+        }
+      }
+    }
+  </script>
+</head>
+<body class="pt-14 min-h-screen bg-ev-bg font-sans text-ev-text">
+
+<a href="#main-content" class="skip-link">Skip to content</a>
+
+<nav class="navbar">
+  <div class="nav-inner">
+    <a class="nav-logo" href="/">VoltBook</a>
+    <ul class="nav-links" id="nav-links" role="menubar"></ul>
+    <button class="nav-hamburger" id="nav-hamburger"
+            aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<main id="main-content" class="max-w-5xl mx-auto px-4 py-6 md:px-6 md:py-8">
+
+  <!-- Greeting -->
+  <div class="mb-6">
+    <h1 class="text-xl font-semibold text-ev-text" id="dashboard-greeting">Dashboard</h1>
+    <p class="text-sm text-ev-sub mt-0.5" id="welcome-msg">Loading…</p>
+  </div>
+
+  <!-- Stats -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+    <div class="bg-ev-white border border-ev-border rounded p-4">
+      <div class="text-2xl font-semibold text-ev-text font-mono" id="stat-total">—</div>
+      <div class="text-xs text-ev-muted mt-1">My Bookings</div>
+    </div>
+    <div class="bg-ev-white border border-ev-border rounded p-4">
+      <div class="text-2xl font-semibold text-ev-text font-mono" id="stat-confirmed">—</div>
+      <div class="text-xs text-ev-muted mt-1">Upcoming</div>
+    </div>
+    <div class="bg-ev-white border border-ev-border rounded p-4">
+      <div class="text-2xl font-semibold text-ev-text font-mono" id="stat-completed">—</div>
+      <div class="text-xs text-ev-muted mt-1">Completed</div>
+    </div>
+    <div class="bg-ev-white border border-ev-border rounded p-4">
+      <div class="text-2xl font-semibold text-ev-text font-mono" id="stat-cancelled">—</div>
+      <div class="text-xs text-ev-muted mt-1">Cancelled</div>
+    </div>
+  </div>
+
+  <!-- Quick actions -->
+  <div class="flex gap-2 mb-8">
+    <a href="/stations.html" class="btn btn-primary">Find a Station</a>
+    <a href="/bookings.html" class="btn btn-outline">My Bookings</a>
+  </div>
+
+  <!-- Recent bookings -->
+  <div>
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-sm font-semibold text-ev-text">Recent Bookings</h2>
+      <a href="/bookings.html" class="btn btn-ghost btn-sm">View all</a>
+    </div>
+    <div class="bg-ev-white border border-ev-border rounded overflow-hidden">
+      <div id="recent-bookings" class="p-4">
+        <div class="spinner"></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<div class="toast-container" role="status" aria-live="polite" aria-label="Notifications"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/bookings.js"></script>
+<script>
+  const user = requireAuth();
+  buildNav('nav-links', '/dashboard.html');
+  initHamburger();
+
+  const hour  = new Date().getHours();
+  const greet = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('dashboard-greeting').textContent = `${greet}, ${esc(user.username)}`;
+
+  API.get('/api/bookings').then(bookings => {
+    const confirmed = bookings.filter(b => b.status === 'CONFIRMED').length;
+    const completed = bookings.filter(b => b.status === 'COMPLETED').length;
+    const cancelled = bookings.filter(b => b.status === 'CANCELLED').length;
+
+    document.getElementById('stat-total').textContent     = bookings.length;
+    document.getElementById('stat-confirmed').textContent = confirmed;
+    document.getElementById('stat-completed').textContent = completed;
+    document.getElementById('stat-cancelled').textContent = cancelled;
+
+    document.getElementById('welcome-msg').textContent =
+      confirmed === 1 ? 'You have 1 upcoming booking.' : `You have ${confirmed} upcoming booking${confirmed !== 1 ? 's' : ''}.`;
+
+    const recent = bookings.slice(0, 5);
+    document.getElementById('recent-bookings').innerHTML =
+      recent.length
+        ? renderBookingsTable(recent, false)
+        : `<div class="empty-state">
+             <h3>No bookings yet</h3>
+             <p>Book your first charging slot to get started.</p>
+             <a href="/stations.html" class="btn btn-primary">Find a Station</a>
+           </div>`;
+  }).catch(() => {
+    document.getElementById('recent-bookings').innerHTML =
+      '<div class="alert alert-error">Failed to load bookings.</div>';
+    document.getElementById('welcome-msg').textContent = 'Could not load booking data.';
+  });
+
+  function initHamburger() {
+    const btn    = document.getElementById('nav-hamburger');
+    const navbar = document.querySelector('.navbar');
+    if (!btn || !navbar) return;
+    btn.addEventListener('click', () => {
+      btn.classList.toggle('open');
+      navbar.classList.toggle('menu-open');
+      btn.setAttribute('aria-expanded', navbar.classList.contains('menu-open'));
+      document.body.style.overflow = navbar.classList.contains('menu-open') ? 'hidden' : '';
+    });
+    document.getElementById('nav-links').addEventListener('click', e => {
+      if (e.target.closest('a, button')) {
+        btn.classList.remove('open');
+        navbar.classList.remove('menu-open');
+        btn.setAttribute('aria-expanded', 'false');
+        document.body.style.overflow = '';
+      }
+    });
+  }
+
+  function esc(str) {
+    return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+</script>
+</body>
+</html>

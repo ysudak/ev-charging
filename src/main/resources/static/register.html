@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="theme-color" content="#0969da"/>
+  <title>VoltBook — Create Account</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"/>
+  <link rel="stylesheet" href="/css/style.css"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            accent:  { DEFAULT: '#0969da', dark: '#0860ca', light: '#ddf4ff' },
+            success: { DEFAULT: '#1a7f37', light: '#d1f0db' },
+            warning: { DEFAULT: '#9a6700', light: '#fff8c5' },
+            danger:  { DEFAULT: '#cf222e', light: '#ffdce0' },
+            ev: { text: '#24292f', sub: '#57606a', muted: '#8c959f', border: '#d0d7de', bg: '#f6f8fa', white: '#ffffff', hover: '#f0f3f7' },
+          },
+          fontFamily: { sans: ['Outfit', 'system-ui', 'sans-serif'], mono: ['JetBrains Mono', 'ui-monospace', 'monospace'] },
+        }
+      }
+    }
+  </script>
+</head>
+<body class="min-h-screen bg-ev-bg font-sans text-ev-text flex items-center justify-center px-4 py-12">
+
+  <div class="w-full max-w-sm">
+
+    <div class="text-center mb-6">
+      <a href="/index.html" class="text-base font-semibold text-ev-text hover:text-accent" style="text-decoration:none;">VoltBook</a>
+    </div>
+
+    <div class="bg-ev-white border border-ev-border rounded-lg p-6 shadow-sm">
+
+      <h1 class="text-lg font-semibold text-ev-text mb-5">Create account</h1>
+
+      <div id="alert-area"></div>
+
+      <form id="register-form" novalidate>
+        <div class="form-group">
+          <label class="form-label" for="username">Username</label>
+          <input id="username" type="text" class="form-control"
+                 placeholder="At least 3 characters" autocomplete="username" required/>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <div class="password-wrapper">
+            <input id="password" type="password" class="form-control"
+                   placeholder="At least 4 characters" autocomplete="new-password" required/>
+            <button type="button" class="password-toggle" id="pw-toggle" aria-label="Show password">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="confirm-password">Confirm Password</label>
+          <input id="confirm-password" type="password" class="form-control"
+                 placeholder="Repeat your password" autocomplete="new-password" required/>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-full mt-1" id="submit-btn">Create Account</button>
+      </form>
+
+    </div>
+
+    <p class="text-center text-sm text-ev-sub mt-4">
+      Already have an account? <a href="/login.html" class="font-medium text-accent">Sign In</a>
+    </p>
+
+  </div>
+
+<script src="/js/api.js"></script>
+<script>
+  document.getElementById('pw-toggle').addEventListener('click', function () {
+    const pw = document.getElementById('password');
+    const hidden = pw.type === 'password';
+    pw.type = hidden ? 'text' : 'password';
+    this.setAttribute('aria-label', hidden ? 'Hide password' : 'Show password');
+  });
+
+  document.getElementById('register-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn      = document.getElementById('submit-btn');
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    const confirm  = document.getElementById('confirm-password').value;
+
+    clearAlert();
+    document.querySelectorAll('.form-control').forEach(el => el.classList.remove('error'));
+
+    if (username.length < 3) {
+      showAlert('Username must be at least 3 characters.', 'error');
+      document.getElementById('username').classList.add('error'); return;
+    }
+    if (password.length < 4) {
+      showAlert('Password must be at least 4 characters.', 'error');
+      document.getElementById('password').classList.add('error'); return;
+    }
+    if (password !== confirm) {
+      showAlert('Passwords do not match.', 'error');
+      document.getElementById('confirm-password').classList.add('error'); return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="btn-spinner"></span> Creating…';
+
+    try {
+      await API.post('/api/auth/register', { username, password });
+      showAlert('Account created! Redirecting to sign in…', 'success');
+      setTimeout(() => { window.location.href = '/login.html'; }, 1500);
+    } catch (err) {
+      showAlert(err.message || 'Registration failed.', 'error');
+      btn.disabled = false;
+      btn.textContent = 'Create Account';
+    }
+  });
+
+  function showAlert(msg, type) {
+    document.getElementById('alert-area').innerHTML =
+      `<div class="alert alert-${type}" role="alert">${msg}</div>`;
+  }
+  function clearAlert() { document.getElementById('alert-area').innerHTML = ''; }
+</script>
+</body>
+</html>

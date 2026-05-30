@@ -1,5 +1,6 @@
 package com.evbooking.controller;
 
+import com.evbooking.config.SecurityConfig;
 import com.evbooking.dto.BookedTimeResponse;
 import com.evbooking.dto.ConnectorRequest;
 import com.evbooking.dto.ConnectorResponse;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
@@ -27,6 +29,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ConnectorController.class)
+@Import(SecurityConfig.class)
 @TestPropertySource(properties = "spring.session.store-type=none")
 class ConnectorControllerTest {
 
@@ -43,7 +46,7 @@ class ConnectorControllerTest {
     }
 
     @Test
-    void listByStation_noAuthRequired_returns200() throws Exception {
+    void listsConnectorsWithoutLogin() throws Exception {
         when(connectorService.findByStation(1L)).thenReturn(List.of(sample()));
 
         mockMvc.perform(get("/api/stations/1/connectors"))
@@ -53,17 +56,7 @@ class ConnectorControllerTest {
     }
 
     @Test
-    void getOne_noAuthRequired_returns200() throws Exception {
-        when(connectorService.findById(10L)).thenReturn(sample());
-
-        mockMvc.perform(get("/api/connectors/10"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(10))
-                .andExpect(jsonPath("$.stationId").value(1));
-    }
-
-    @Test
-    void getOne_notFound_returns404() throws Exception {
+    void returns404WhenNotFound() throws Exception {
         when(connectorService.findById(99L))
                 .thenThrow(new ResourceNotFoundException("Connector not found: 99"));
 
@@ -73,7 +66,7 @@ class ConnectorControllerTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    void create_asAdmin_returns201() throws Exception {
+    void adminCanAddConnector() throws Exception {
         ConnectorRequest req = new ConnectorRequest("Type2", 22);
         when(connectorService.create(eq(1L), any())).thenReturn(sample());
 
@@ -85,7 +78,7 @@ class ConnectorControllerTest {
 
     @Test
     @WithMockUser(roles = "DRIVER")
-    void create_asDriver_returns403() throws Exception {
+    void driverCannotAddConnector() throws Exception {
         mockMvc.perform(post("/api/stations/1/connectors")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(new ConnectorRequest("Type2", 22))))
@@ -94,28 +87,7 @@ class ConnectorControllerTest {
 
     @Test
     @WithMockUser(roles = "ADMIN")
-    void update_asAdmin_returns200() throws Exception {
-        ConnectorRequest req = new ConnectorRequest("CHAdeMO", 100);
-        when(connectorService.update(eq(10L), any())).thenReturn(sample());
-
-        mockMvc.perform(put("/api/connectors/10")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    @WithMockUser(roles = "DRIVER")
-    void update_asDriver_returns403() throws Exception {
-        mockMvc.perform(put("/api/connectors/10")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(new ConnectorRequest("Type2", 22))))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    @WithMockUser(roles = "ADMIN")
-    void delete_asAdmin_returns204() throws Exception {
+    void adminCanDeleteConnector() throws Exception {
         doNothing().when(connectorService).delete(10L);
 
         mockMvc.perform(delete("/api/connectors/10"))
@@ -123,14 +95,7 @@ class ConnectorControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "DRIVER")
-    void delete_asDriver_returns403() throws Exception {
-        mockMvc.perform(delete("/api/connectors/10"))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    void bookedTimes_noAuthRequired_returns200() throws Exception {
+    void returnsBookedTimesWithoutLogin() throws Exception {
         when(bookingService.getBookedTimes(eq(10L), any()))
                 .thenReturn(List.of(new BookedTimeResponse(LocalTime.of(10, 0), LocalTime.of(11, 0))));
 

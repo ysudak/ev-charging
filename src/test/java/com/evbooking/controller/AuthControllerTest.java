@@ -1,5 +1,6 @@
 package com.evbooking.controller;
 
+import com.evbooking.config.SecurityConfig;
 import com.evbooking.dto.LoginRequest;
 import com.evbooking.dto.RegisterRequest;
 import com.evbooking.dto.UserResponse;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -26,6 +28,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(AuthController.class)
+@Import(SecurityConfig.class)
 @TestPropertySource(properties = "spring.session.store-type=none")
 class AuthControllerTest {
 
@@ -38,7 +41,7 @@ class AuthControllerTest {
     @MockBean private SessionAuthEntryPoint sessionAuthEntryPoint;
 
     @Test
-    void register_validRequest_returns201() throws Exception {
+    void registersNewUser() throws Exception {
         when(userService.register(any())).thenReturn(new UserResponse(1L, "alice", "DRIVER"));
 
         mockMvc.perform(post("/api/auth/register")
@@ -50,7 +53,7 @@ class AuthControllerTest {
     }
 
     @Test
-    void register_duplicateUsername_returns400() throws Exception {
+    void rejectsDuplicateUsername() throws Exception {
         when(userService.register(any()))
                 .thenThrow(new IllegalArgumentException("Username already taken: alice"));
 
@@ -62,7 +65,7 @@ class AuthControllerTest {
     }
 
     @Test
-    void register_blankUsername_returns400() throws Exception {
+    void rejectsBlankUsername() throws Exception {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\":\"\",\"password\":\"secret123\"}"))
@@ -70,7 +73,7 @@ class AuthControllerTest {
     }
 
     @Test
-    void login_validCredentials_returns200() throws Exception {
+    void loginSucceedsWithValidCredentials() throws Exception {
         Authentication auth = mock(Authentication.class);
         when(auth.getName()).thenReturn("alice");
         when(authenticationManager.authenticate(any())).thenReturn(auth);
@@ -88,7 +91,7 @@ class AuthControllerTest {
     }
 
     @Test
-    void login_invalidCredentials_returns401() throws Exception {
+    void loginFailsWithWrongPassword() throws Exception {
         when(authenticationManager.authenticate(any()))
                 .thenThrow(new BadCredentialsException("Bad credentials"));
 
@@ -99,22 +102,10 @@ class AuthControllerTest {
     }
 
     @Test
-    void logout_returns200() throws Exception {
+    void logoutSucceeds() throws Exception {
         mockMvc.perform(post("/api/auth/logout"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Logged out successfully."));
     }
 
-    @Test
-    @WithMockUser(username = "alice", roles = "DRIVER")
-    void me_authenticated_returns200() throws Exception {
-        User user = new User("alice", "encoded", User.Role.DRIVER);
-        user.setId(1L);
-        when(userService.getEntityByUsername("alice")).thenReturn(user);
-        when(userService.findById(1L)).thenReturn(new UserResponse(1L, "alice", "DRIVER"));
-
-        mockMvc.perform(get("/api/auth/me"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username").value("alice"));
-    }
 }

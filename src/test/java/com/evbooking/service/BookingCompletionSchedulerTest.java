@@ -28,7 +28,7 @@ class BookingCompletionSchedulerTest {
     @InjectMocks private BookingCompletionScheduler scheduler;
 
     @Test
-    void completePastBookings_marksPastBookingsAsCompleted() {
+    void marksPastBookingsCompleted() {
         User user = new User("driver", "pwd", User.Role.DRIVER);
         ChargingStation station = new ChargingStation("S", "addr", 0.0, 0.0, null);
         Connector connector = new Connector(station, "CCS2", 50);
@@ -45,7 +45,7 @@ class BookingCompletionSchedulerTest {
     }
 
     @Test
-    void completePastBookings_noPastBookings_skips() {
+    void skipsWhenNoPastBookings() {
         when(bookingRepository.findPastConfirmedBookings(any())).thenReturn(Collections.emptyList());
 
         scheduler.completePastBookings();

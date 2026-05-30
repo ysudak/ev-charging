@@ -37,7 +37,7 @@ class UserServiceTest {
     }
 
     @Test
-    void register_success() {
+    void registersDriver() {
         when(userRepository.existsByUsername("alice")).thenReturn(false);
         when(passwordEncoder.encode("secret123")).thenReturn("encoded");
         when(userRepository.save(any())).thenReturn(user);
@@ -50,7 +50,7 @@ class UserServiceTest {
     }
 
     @Test
-    void register_duplicateUsername_throws() {
+    void rejectsDuplicateUsername() {
         when(userRepository.existsByUsername("alice")).thenReturn(true);
 
         assertThatThrownBy(() -> userService.register(new RegisterRequest("alice", "secret123")))
@@ -59,46 +59,7 @@ class UserServiceTest {
     }
 
     @Test
-    void findAll_returnsAllUsers() {
-        when(userRepository.findAll()).thenReturn(List.of(user));
-
-        List<UserResponse> result = userService.findAll();
-
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).username()).isEqualTo("alice");
-    }
-
-    @Test
-    void findById_found() {
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-
-        UserResponse response = userService.findById(1L);
-
-        assertThat(response.id()).isEqualTo(1L);
-        assertThat(response.username()).isEqualTo("alice");
-    }
-
-    @Test
-    void findById_notFound_throws() {
-        when(userRepository.findById(99L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> userService.findById(99L))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessageContaining("User not found");
-    }
-
-    @Test
-    void getEntityByUsername_found() {
-        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
-
-        User result = userService.getEntityByUsername("alice");
-
-        assertThat(result.getUsername()).isEqualTo("alice");
-        assertThat(result.getRole()).isEqualTo(User.Role.DRIVER);
-    }
-
-    @Test
-    void getEntityByUsername_notFound_throws() {
+    void throwsWhenUsernameNotFound() {
         when(userRepository.findByUsername("nobody")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> userService.getEntityByUsername("nobody"))

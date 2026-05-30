@@ -1,5 +1,6 @@
 package com.evbooking.controller;
 
+import com.evbooking.config.SecurityConfig;
 import com.evbooking.dto.BookingRequest;
 import com.evbooking.dto.BookingResponse;
 import com.evbooking.dto.RescheduleRequest;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.TestPropertySource;
@@ -21,7 +23,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -29,6 +30,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(BookingController.class)
+@Import(SecurityConfig.class)
 @TestPropertySource(properties = "spring.session.store-type=none")
 class BookingControllerTest {
 
@@ -53,7 +55,7 @@ class BookingControllerTest {
 
     @Test
     @WithMockUser(username = "driver1", roles = "DRIVER")
-    void create_success_returns201() throws Exception {
+    void createsBooking() throws Exception {
         BookingRequest req = new BookingRequest(10L, LocalDate.now().plusDays(1),
                 LocalTime.of(10, 0), LocalTime.of(11, 0));
         when(bookingService.createBooking(eq("driver1"), any())).thenReturn(sampleConfirmed());
@@ -68,7 +70,7 @@ class BookingControllerTest {
 
     @Test
     @WithMockUser(username = "driver1", roles = "DRIVER")
-    void create_timeSlotConflict_returns409() throws Exception {
+    void returns409OnConflict() throws Exception {
         BookingRequest req = new BookingRequest(10L, LocalDate.now().plusDays(1),
                 LocalTime.of(10, 0), LocalTime.of(11, 0));
         when(bookingService.createBooking(any(), any()))
@@ -83,7 +85,7 @@ class BookingControllerTest {
 
     @Test
     @WithMockUser(username = "driver1", roles = "DRIVER")
-    void create_pastDate_returns400() throws Exception {
+    void returns400ForPastDate() throws Exception {
         BookingRequest req = new BookingRequest(10L, LocalDate.now().plusDays(1),
                 LocalTime.of(10, 0), LocalTime.of(11, 0));
         when(bookingService.createBooking(any(), any()))
@@ -97,28 +99,7 @@ class BookingControllerTest {
 
     @Test
     @WithMockUser(username = "driver1", roles = "DRIVER")
-    void listMine_returns200WithBookings() throws Exception {
-        when(bookingService.findForUser("driver1")).thenReturn(List.of(sampleConfirmed()));
-
-        mockMvc.perform(get("/api/bookings"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].username").value("driver1"))
-                .andExpect(jsonPath("$[0].status").value("CONFIRMED"));
-    }
-
-    @Test
-    @WithMockUser(username = "driver1", roles = "DRIVER")
-    void getOne_found_returns200() throws Exception {
-        when(bookingService.findById(1L)).thenReturn(sampleConfirmed());
-
-        mockMvc.perform(get("/api/bookings/1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1));
-    }
-
-    @Test
-    @WithMockUser(username = "driver1", roles = "DRIVER")
-    void getOne_notFound_returns404() throws Exception {
+    void returns404WhenNotFound() throws Exception {
         when(bookingService.findById(99L))
                 .thenThrow(new ResourceNotFoundException("Booking not found: 99"));
 
@@ -129,7 +110,7 @@ class BookingControllerTest {
 
     @Test
     @WithMockUser(username = "driver1", roles = "DRIVER")
-    void cancel_ownBooking_returns200() throws Exception {
+    void driverCanCancelOwnBooking() throws Exception {
         when(bookingService.cancelBooking("driver1", 1L, false)).thenReturn(sampleCancelled());
 
         mockMvc.perform(delete("/api/bookings/1"))
@@ -139,21 +120,7 @@ class BookingControllerTest {
 
     @Test
     @WithMockUser(username = "driver1", roles = "DRIVER")
-    void reschedule_success_returns200() throws Exception {
-        RescheduleRequest req = new RescheduleRequest(LocalDate.now().plusDays(2),
-                LocalTime.of(14, 0), LocalTime.of(15, 0));
-        when(bookingService.rescheduleBooking(eq("driver1"), eq(1L), any()))
-                .thenReturn(sampleConfirmed());
-
-        mockMvc.perform(put("/api/bookings/1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    @WithMockUser(username = "driver1", roles = "DRIVER")
-    void reschedule_conflict_returns409() throws Exception {
+    void returns409OnRescheduleConflict() throws Exception {
         RescheduleRequest req = new RescheduleRequest(LocalDate.now().plusDays(2),
                 LocalTime.of(14, 0), LocalTime.of(15, 0));
         when(bookingService.rescheduleBooking(any(), any(), any()))

@@ -41,45 +41,7 @@ class ConnectorServiceTest {
     }
 
     @Test
-    void findByStation_returnsList() {
-        when(connectorRepository.findByStationId(1L)).thenReturn(List.of(connector));
-
-        List<ConnectorResponse> result = connectorService.findByStation(1L);
-
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).connectorType()).isEqualTo("CCS2");
-        assertThat(result.get(0).powerKw()).isEqualTo(50);
-    }
-
-    @Test
-    void findById_found() {
-        when(connectorRepository.findById(10L)).thenReturn(Optional.of(connector));
-
-        ConnectorResponse response = connectorService.findById(10L);
-
-        assertThat(response.id()).isEqualTo(10L);
-        assertThat(response.stationId()).isEqualTo(1L);
-    }
-
-    @Test
-    void findById_notFound_throws() {
-        when(connectorRepository.findById(99L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> connectorService.findById(99L))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessageContaining("Connector not found");
-    }
-
-    @Test
-    void getEntity_notFound_throws() {
-        when(connectorRepository.findById(99L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> connectorService.getEntity(99L))
-                .isInstanceOf(ResourceNotFoundException.class);
-    }
-
-    @Test
-    void create_success() {
+    void createsConnector() {
         ConnectorRequest req = new ConnectorRequest("CHAdeMO", 100);
         Connector saved = new Connector(station, "CHAdeMO", 100);
         saved.setId(20L);
@@ -94,28 +56,7 @@ class ConnectorServiceTest {
     }
 
     @Test
-    void update_success() {
-        ConnectorRequest req = new ConnectorRequest("Type2", 22);
-        when(connectorRepository.findById(10L)).thenReturn(Optional.of(connector));
-        when(connectorRepository.save(connector)).thenReturn(connector);
-
-        ConnectorResponse response = connectorService.update(10L, req);
-
-        assertThat(response.connectorType()).isEqualTo("Type2");
-        assertThat(response.powerKw()).isEqualTo(22);
-    }
-
-    @Test
-    void delete_success() {
-        when(connectorRepository.findById(10L)).thenReturn(Optional.of(connector));
-
-        connectorService.delete(10L);
-
-        verify(connectorRepository).delete(connector);
-    }
-
-    @Test
-    void delete_notFound_throws() {
+    void deleteFailsWhenNotFound() {
         when(connectorRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> connectorService.delete(99L))

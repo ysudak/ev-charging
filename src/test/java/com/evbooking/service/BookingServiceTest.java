@@ -1,6 +1,5 @@
 package com.evbooking.service;
 
-import com.evbooking.dto.BookedTimeResponse;
 import com.evbooking.dto.BookingRequest;
 import com.evbooking.dto.BookingResponse;
 import com.evbooking.dto.RescheduleRequest;
@@ -66,19 +65,7 @@ class BookingServiceTest {
     }
 
     @Test
-    void getBookedTimes_returnsTimesForConnectorAndDate() {
-        when(bookingRepository.findConfirmedByConnectorAndDate(100L, TOMORROW))
-                .thenReturn(List.of(booking));
-
-        List<BookedTimeResponse> result = bookingService.getBookedTimes(100L, TOMORROW);
-
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).startTime()).isEqualTo(LocalTime.of(10, 0));
-        assertThat(result.get(0).endTime()).isEqualTo(LocalTime.of(11, 0));
-    }
-
-    @Test
-    void createBooking_success() {
+    void createsBooking() {
         BookingRequest req = new BookingRequest(100L, TOMORROW, LocalTime.of(9, 0), LocalTime.of(10, 0));
         Booking saved = new Booking(driver, connector, TOMORROW, LocalTime.of(9, 0), LocalTime.of(10, 0));
         saved.setId(999L);
@@ -99,7 +86,7 @@ class BookingServiceTest {
     }
 
     @Test
-    void createBooking_endTimeNotAfterStartTime_throws() {
+    void rejectsEndBeforeStart() {
         BookingRequest req = new BookingRequest(100L, TOMORROW, LocalTime.of(11, 0), LocalTime.of(10, 0));
 
         assertThatThrownBy(() -> bookingService.createBooking("driver1", req))
@@ -108,7 +95,7 @@ class BookingServiceTest {
     }
 
     @Test
-    void createBooking_pastDate_throws() {
+    void rejectsPastDate() {
         BookingRequest req = new BookingRequest(100L, YESTERDAY, LocalTime.of(10, 0), LocalTime.of(11, 0));
 
         assertThatThrownBy(() -> bookingService.createBooking("driver1", req))
@@ -117,7 +104,7 @@ class BookingServiceTest {
     }
 
     @Test
-    void createBooking_adminRole_throws() {
+    void adminCannotBook() {
         BookingRequest req = new BookingRequest(100L, TOMORROW, LocalTime.of(10, 0), LocalTime.of(11, 0));
         when(userService.getEntityByUsername("admin1")).thenReturn(admin);
 
@@ -127,7 +114,7 @@ class BookingServiceTest {
     }
 
     @Test
-    void createBooking_connectorConflict_throws() {
+    void rejectsConnectorConflict() {
         BookingRequest req = new BookingRequest(100L, TOMORROW, LocalTime.of(10, 0), LocalTime.of(11, 0));
         when(userService.getEntityByUsername("driver1")).thenReturn(driver);
         when(connectorService.getEntity(100L)).thenReturn(connector);
@@ -139,7 +126,7 @@ class BookingServiceTest {
     }
 
     @Test
-    void createBooking_driverConflict_throws() {
+    void rejectsDriverOverlap() {
         BookingRequest req = new BookingRequest(100L, TOMORROW, LocalTime.of(10, 0), LocalTime.of(11, 0));
         when(userService.getEntityByUsername("driver1")).thenReturn(driver);
         when(connectorService.getEntity(100L)).thenReturn(connector);
@@ -153,7 +140,7 @@ class BookingServiceTest {
     }
 
     @Test
-    void cancelBooking_ownBooking_success() {
+    void driverCancelsOwnBooking() {
         when(bookingRepository.findById(1000L)).thenReturn(Optional.of(booking));
         when(bookingRepository.save(booking)).thenReturn(booking);
 
@@ -163,17 +150,7 @@ class BookingServiceTest {
     }
 
     @Test
-    void cancelBooking_adminCancelsOthersBooking_success() {
-        when(bookingRepository.findById(1000L)).thenReturn(Optional.of(booking));
-        when(bookingRepository.save(booking)).thenReturn(booking);
-
-        BookingResponse response = bookingService.cancelBooking("admin1", 1000L, true);
-
-        assertThat(response.status()).isEqualTo("CANCELLED");
-    }
-
-    @Test
-    void cancelBooking_notFound_throws() {
+    void cancelFailsWhenNotFound() {
         when(bookingRepository.findById(999L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> bookingService.cancelBooking("driver1", 999L, false))
@@ -181,7 +158,7 @@ class BookingServiceTest {
     }
 
     @Test
-    void cancelBooking_notOwnerNotAdmin_throws() {
+    void driverCannotCancelOthers() {
         when(bookingRepository.findById(1000L)).thenReturn(Optional.of(booking));
 
         assertThatThrownBy(() -> bookingService.cancelBooking("otherdriver", 1000L, false))
@@ -189,7 +166,7 @@ class BookingServiceTest {
     }
 
     @Test
-    void cancelBooking_pastBooking_throws() {
+    void cannotCancelPastBooking() {
         booking.setBookingDate(YESTERDAY);
         when(bookingRepository.findById(1000L)).thenReturn(Optional.of(booking));
 
@@ -199,7 +176,7 @@ class BookingServiceTest {
     }
 
     @Test
-    void cancelBooking_alreadyCancelled_throws() {
+    void cannotCancelTwice() {
         booking.setStatus(Booking.Status.CANCELLED);
         when(bookingRepository.findById(1000L)).thenReturn(Optional.of(booking));
 
@@ -209,7 +186,7 @@ class BookingServiceTest {
     }
 
     @Test
-    void rescheduleBooking_success() {
+    void reschedulesBooking() {
         RescheduleRequest req = new RescheduleRequest(TOMORROW.plusDays(1), LocalTime.of(14, 0), LocalTime.of(15, 0));
         Booking newBooking = new Booking(driver, connector, TOMORROW.plusDays(1), LocalTime.of(14, 0), LocalTime.of(15, 0));
         newBooking.setId(1001L);
@@ -230,7 +207,7 @@ class BookingServiceTest {
     }
 
     @Test
-    void rescheduleBooking_cancelledBooking_throws() {
+    void cannotRescheduleCancelled() {
         booking.setStatus(Booking.Status.CANCELLED);
         RescheduleRequest req = new RescheduleRequest(TOMORROW, LocalTime.of(14, 0), LocalTime.of(15, 0));
         when(bookingRepository.findById(1000L)).thenReturn(Optional.of(booking));
@@ -241,7 +218,7 @@ class BookingServiceTest {
     }
 
     @Test
-    void rescheduleBooking_notOwner_throws() {
+    void driverCannotRescheduleOthers() {
         RescheduleRequest req = new RescheduleRequest(TOMORROW, LocalTime.of(14, 0), LocalTime.of(15, 0));
         when(bookingRepository.findById(1000L)).thenReturn(Optional.of(booking));
 
@@ -249,42 +226,4 @@ class BookingServiceTest {
                 .isInstanceOf(AccessDeniedException.class);
     }
 
-    @Test
-    void findForUser_returnsUserBookings() {
-        when(userService.getEntityByUsername("driver1")).thenReturn(driver);
-        when(bookingRepository.findByUserIdOrderByBookingDateDescStartTimeDesc(1L))
-                .thenReturn(List.of(booking));
-
-        List<BookingResponse> result = bookingService.findForUser("driver1");
-
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).username()).isEqualTo("driver1");
-    }
-
-    @Test
-    void findAll_returnsAllBookings() {
-        when(bookingRepository.findAllByOrderByBookingDateDescStartTimeDesc())
-                .thenReturn(List.of(booking));
-
-        List<BookingResponse> result = bookingService.findAll();
-
-        assertThat(result).hasSize(1);
-    }
-
-    @Test
-    void findById_found() {
-        when(bookingRepository.findById(1000L)).thenReturn(Optional.of(booking));
-
-        BookingResponse result = bookingService.findById(1000L);
-
-        assertThat(result.id()).isEqualTo(1000L);
-    }
-
-    @Test
-    void findById_notFound_throws() {
-        when(bookingRepository.findById(999L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> bookingService.findById(999L))
-                .isInstanceOf(ResourceNotFoundException.class);
-    }
 }

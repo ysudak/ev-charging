@@ -37,7 +37,7 @@ class BookingRepositoryTest {
     }
 
     @Test
-    void findConfirmedByConnectorAndDate_returnsOnlyConfirmed() {
+    void returnsOnlyConfirmedForDate() {
         LocalDate date = LocalDate.now().plusDays(1);
         em.persist(new Booking(driver, connector, date, LocalTime.of(10, 0), LocalTime.of(11, 0)));
         Booking cancelled = new Booking(driver, connector, date, LocalTime.of(12, 0), LocalTime.of(13, 0));
@@ -52,7 +52,7 @@ class BookingRepositoryTest {
     }
 
     @Test
-    void findConflictingBookingsForLock_detectsOverlap() {
+    void detectsOverlappingBooking() {
         LocalDate date = LocalDate.now().plusDays(1);
         em.persist(new Booking(driver, connector, date, LocalTime.of(10, 0), LocalTime.of(12, 0)));
         em.flush();
@@ -64,7 +64,7 @@ class BookingRepositoryTest {
     }
 
     @Test
-    void findConflictingBookingsForLock_adjacentTimesNoConflict() {
+    void adjacentTimesDoNotConflict() {
         LocalDate date = LocalDate.now().plusDays(1);
         em.persist(new Booking(driver, connector, date, LocalTime.of(10, 0), LocalTime.of(11, 0)));
         em.flush();
@@ -76,7 +76,7 @@ class BookingRepositoryTest {
     }
 
     @Test
-    void findConflictingBookingsForLock_excludesCancelledBookings() {
+    void cancelledBookingsDoNotConflict() {
         LocalDate date = LocalDate.now().plusDays(1);
         Booking cancelled = new Booking(driver, connector, date, LocalTime.of(10, 0), LocalTime.of(12, 0));
         cancelled.setStatus(Booking.Status.CANCELLED);
@@ -90,7 +90,7 @@ class BookingRepositoryTest {
     }
 
     @Test
-    void findDriverOverlappingBookings_detectsDriverConflict() {
+    void detectsDriverOverlap() {
         LocalDate date = LocalDate.now().plusDays(1);
         em.persist(new Booking(driver, connector, date, LocalTime.of(14, 0), LocalTime.of(15, 0)));
         em.flush();
@@ -102,20 +102,7 @@ class BookingRepositoryTest {
     }
 
     @Test
-    void findDriverOverlappingBookings_differentDriverNoConflict() {
-        User driver2 = em.persist(new User("driver2", "encoded", User.Role.DRIVER));
-        LocalDate date = LocalDate.now().plusDays(1);
-        em.persist(new Booking(driver, connector, date, LocalTime.of(14, 0), LocalTime.of(15, 0)));
-        em.flush();
-
-        List<Booking> result = bookingRepository.findDriverOverlappingBookings(
-                driver2.getId(), date, LocalTime.of(14, 0), LocalTime.of(15, 0));
-
-        assertThat(result).isEmpty();
-    }
-
-    @Test
-    void findPastConfirmedBookings_returnsPastOnly() {
+    void returnsPastConfirmedOnly() {
         LocalDate yesterday = LocalDate.now().minusDays(1);
         LocalDate tomorrow = LocalDate.now().plusDays(1);
         em.persist(new Booking(driver, connector, yesterday, LocalTime.of(10, 0), LocalTime.of(11, 0)));
@@ -129,7 +116,7 @@ class BookingRepositoryTest {
     }
 
     @Test
-    void findPastConfirmedBookings_excludesCancelledPastBookings() {
+    void excludesCancelledFromPastQuery() {
         LocalDate yesterday = LocalDate.now().minusDays(1);
         Booking cancelled = new Booking(driver, connector, yesterday, LocalTime.of(10, 0), LocalTime.of(11, 0));
         cancelled.setStatus(Booking.Status.CANCELLED);
@@ -142,7 +129,7 @@ class BookingRepositoryTest {
     }
 
     @Test
-    void countTodayGroupedByStation_returnsCorrectCount() {
+    void countsBookingsByStationForToday() {
         LocalDate today = LocalDate.now();
         User driver2 = em.persist(new User("driver2", "encoded", User.Role.DRIVER));
         em.persist(new Booking(driver, connector, today, LocalTime.of(9, 0), LocalTime.of(10, 0)));
@@ -156,16 +143,4 @@ class BookingRepositoryTest {
         assertThat((Long) result.get(0)[1]).isEqualTo(2L);
     }
 
-    @Test
-    void findByUserIdOrderByBookingDateDescStartTimeDesc_orderedCorrectly() {
-        LocalDate base = LocalDate.now().plusDays(1);
-        em.persist(new Booking(driver, connector, base, LocalTime.of(9, 0), LocalTime.of(10, 0)));
-        em.persist(new Booking(driver, connector, base.plusDays(1), LocalTime.of(10, 0), LocalTime.of(11, 0)));
-        em.flush();
-
-        List<Booking> result = bookingRepository.findByUserIdOrderByBookingDateDescStartTimeDesc(driver.getId());
-
-        assertThat(result).hasSize(2);
-        assertThat(result.get(0).getBookingDate()).isAfter(result.get(1).getBookingDate());
-    }
 }

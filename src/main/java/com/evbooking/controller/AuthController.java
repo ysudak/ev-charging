@@ -23,10 +23,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
-/**
- * handles login, logout, registration and checking whos currently logged in.
- * everything works via http session cookies, no jwt at all.
- */
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -66,7 +62,6 @@ public class AuthController {
             context.setAuthentication(auth);
             SecurityContextHolder.setContext(context);
 
-            // save the security context into the new session
             HttpSession session = request.getSession(true);
             session.setAttribute(
                     HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, context);

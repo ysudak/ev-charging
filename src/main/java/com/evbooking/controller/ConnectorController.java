@@ -15,10 +15,6 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
 
-/**
- * connector endpoints. reads are public so the stations page works without login.
- * writes (add/edit/delete) require admin role.
- */
 @RestController
 @RequestMapping("/api")
 public class ConnectorController {

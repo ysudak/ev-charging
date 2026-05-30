@@ -1,16 +1,9 @@
--- seed data for the ev charging booking system
--- all inserts use ON CONFLICT DO NOTHING so re-running on restart wont cause errors
-
--- users
--- passwords are bcrypt hashed (strength 10), both accounts use "password"
--- hash: $2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG
 INSERT INTO users (username, password, role, enabled) VALUES
 ('driver1', '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG', 'DRIVER', true),
 ('driver2', '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG', 'DRIVER', true),
 ('admin1',  '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG', 'ADMIN',  true)
 ON CONFLICT (username) DO NOTHING;
 
--- charging stations with real thessaloniki coordinates
 INSERT INTO charging_stations (name, address, latitude, longitude, description) VALUES
 ('Aristotelous Square Hub',
  'Aristotelous Square, Thessaloniki 546 24',
@@ -41,7 +34,6 @@ ON CONFLICT (name) DO UPDATE
       longitude   = EXCLUDED.longitude,
       description = EXCLUDED.description;
 
--- connectors per station (type 2 AC and CCS DC fast)
 INSERT INTO connectors (station_id, connector_type, power_kw)
 SELECT s.id, 'Type 2', 22
 FROM   charging_stations s WHERE s.name = 'Aristotelous Square Hub'
@@ -82,7 +74,6 @@ SELECT s.id, 'Type 2', 22
 FROM   charging_stations s WHERE s.name = 'Kalamaria Marina Charger'
 ON CONFLICT DO NOTHING;
 
--- past (completed) bookings for history
 INSERT INTO bookings (user_id, connector_id, booking_date, start_time, end_time, status, created_at)
 SELECT u.id, c.id, CURRENT_DATE - 10, '09:00', '11:00', 'COMPLETED', NOW() - INTERVAL '10 days'
 FROM   users u, connectors c
@@ -118,7 +109,6 @@ JOIN   charging_stations s ON s.id = c.station_id
 WHERE  u.username = 'driver2' AND s.name = 'Ano Poli EV Point' AND c.connector_type = 'Type 2'
 LIMIT  1 ON CONFLICT DO NOTHING;
 
--- sample bookings so driver1 has something to see on first login
 INSERT INTO bookings (user_id, connector_id, booking_date, start_time, end_time, status, created_at)
 SELECT u.id, c.id, CURRENT_DATE + 1, '10:00', '12:00', 'CONFIRMED', NOW()
 FROM   users u, connectors c

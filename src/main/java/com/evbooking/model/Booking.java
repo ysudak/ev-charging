@@ -10,10 +10,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
-/**
- * represents a drivers reservation for a connector.
- * status goes CONFIRMED → COMPLETED (auto, past date) or CONFIRMED → CANCELLED.
- */
 @Entity
 @Table(name = "bookings")
 @Getter

@@ -1,9 +1,3 @@
-/**
- * central api client used by every page.
- * all requests include credentials so session cookies get sent.
- * a 401 redirects to login except on login.html itself where it
- * throws the error message so the form can show it.
- */
 const API = (() => {
   const baseUrl = '';
 
@@ -25,7 +19,6 @@ const API = (() => {
         window.location.href = '/login.html';
         return;
       }
-      // On the login page throw so the form's catch block can show the message
       throw new Error(data?.error || data?.message || 'Wrong username or password.');
     }
 

@@ -10,11 +10,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-/**
- * Returns HTTP 401 JSON instead of redirecting to a login page,
- * since this is a REST API consumed by vanilla JS clients that handle
- * navigation themselves.
- */
 @Component
 public class SessionAuthEntryPoint implements AuthenticationEntryPoint {
 

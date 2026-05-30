@@ -7,10 +7,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-/**
- * Represents a system user with a DRIVER or ADMIN role.
- * Passwords are stored as BCrypt hashes — never plaintext.
- */
 @Entity
 @Table(name = "users",
         uniqueConstraints = @UniqueConstraint(columnNames = "username"))

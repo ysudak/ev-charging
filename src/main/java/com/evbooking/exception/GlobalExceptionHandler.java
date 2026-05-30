@@ -13,10 +13,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.stream.Collectors;
 
-/**
- * central exception handler so we dont have try/catch everywhere in the controllers.
- * every handler returns the same ErrorResponse json structure.
- */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 

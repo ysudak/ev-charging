@@ -1,9 +1,3 @@
-/**
- * stations page logic.
- * loads all stations, renders the leaflet map and the station list on the side.
- * handles connector browsing and the booking modal when a driver picks a connector.
- */
-
 let selectedConnectorId = null;
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -127,14 +121,12 @@ function renderWeekStrip(connectorId, selectedDate) {
   const today  = new Date();
   today.setHours(0,0,0,0);
 
-  // build 7 day objects starting from today
   const dates = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(today);
     d.setDate(today.getDate() + i);
     return d;
   });
 
-  // render the day buttons first, then load booking counts in the background to colour the dots
   dates.forEach(d => {
     const dateStr = localDateStr(d);
     const btn = document.createElement('button');
@@ -154,7 +146,6 @@ function renderWeekStrip(connectorId, selectedDate) {
     strip.appendChild(btn);
   });
 
-  // load booking counts for all 7 days in parallel so the dots get colored
   Promise.all(dates.map(d => {
     const ds = localDateStr(d);
     return API.get(`/api/connectors/${connectorId}/booked-times?date=${ds}`)

@@ -13,10 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
 
-/**
- * Marks past CONFIRMED bookings as COMPLETED.
- * Runs once on startup (to catch any missed transitions) and then daily at midnight.
- */
 @Component
 public class BookingCompletionScheduler {
 

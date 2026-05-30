@@ -1,7 +1,5 @@
-/* ── Google Fonts ──────────────────────────────────────────────────────────── */
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 
-/* ── CSS Variables — used by JS and Leaflet ────────────────────────────────── */
 :root {
   --accent:         #0969da;
   --accent-dark:    #0860ca;
@@ -33,7 +31,6 @@
   --nav-height: 56px;
 }
 
-/* ── Reset ─────────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { font-size: 14px; scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
 body {
@@ -50,7 +47,6 @@ a:hover { text-decoration: underline; }
 button { cursor: pointer; font-family: 'Outfit', system-ui, sans-serif; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* ── Keyframes ─────────────────────────────────────────────────────────────── */
 @keyframes spin     { to { transform: rotate(360deg); } }
 @keyframes shimmer  { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 @keyframes shake    { 0%,100% { transform: translateX(0); } 20%,60% { transform: translateX(-6px); } 40%,80% { transform: translateX(6px); } }
@@ -61,7 +57,6 @@ button { cursor: pointer; font-family: 'Outfit', system-ui, sans-serif; }
 @keyframes slideUpMobile { from { transform: translateY(100%); } to { transform: translateY(0); } }
 @keyframes fadeIn   { from { opacity: 0; } to { opacity: 1; } }
 
-/* ── Navigation ────────────────────────────────────────────────────────────── */
 .navbar {
   position: fixed;
   top: 0; left: 0; right: 0;
@@ -113,7 +108,6 @@ button { cursor: pointer; font-family: 'Outfit', system-ui, sans-serif; }
 .nav-links a:hover { background: var(--bg-tertiary); color: var(--text-primary); text-decoration: none; }
 .nav-links a.active { color: var(--accent); font-weight: 600; background: var(--accent-light); }
 
-/* User badge — injected by auth.js */
 .user-badge {
   font-size: 0.75rem;
   font-weight: 600;
@@ -127,7 +121,6 @@ button { cursor: pointer; font-family: 'Outfit', system-ui, sans-serif; }
 .badge-admin  { background: var(--warning-light); color: var(--warning); border-color: rgba(154,103,0,0.2); }
 .badge-driver { background: var(--accent-light);  color: var(--accent);  border-color: rgba(9,105,218,0.2); }
 
-/* Logout button — injected by auth.js */
 .nav-links #logout-btn {
   background: transparent;
   color: var(--text-secondary);
@@ -143,7 +136,6 @@ button { cursor: pointer; font-family: 'Outfit', system-ui, sans-serif; }
 }
 .nav-links #logout-btn:hover { border-color: var(--danger); color: var(--danger); background: var(--danger-light); }
 
-/* Hamburger */
 .nav-hamburger {
   display: flex;
   flex-direction: column;
@@ -167,7 +159,6 @@ button { cursor: pointer; font-family: 'Outfit', system-ui, sans-serif; }
 .nav-hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
 .nav-hamburger.open span:nth-child(3) { transform: translateY(-5.5px) rotate(-45deg); }
 
-/* Mobile nav drawer */
 .navbar.menu-open .nav-links {
   display: flex !important;
   flex-direction: column;
@@ -186,7 +177,6 @@ button { cursor: pointer; font-family: 'Outfit', system-ui, sans-serif; }
 .navbar.menu-open .nav-links a { padding: 10px 12px; font-size: 0.9375rem; }
 .navbar.menu-open .nav-links #logout-btn { margin-top: 6px; width: 100%; min-height: 40px; }
 
-/* Skip link */
 .skip-link {
   position: absolute; top: -100%; left: 12px;
   background: var(--accent); color: white;
@@ -195,7 +185,6 @@ button { cursor: pointer; font-family: 'Outfit', system-ui, sans-serif; }
 }
 .skip-link:focus { top: 6px; }
 
-/* ── Buttons — used in JS-injected templates ───────────────────────────────── */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -247,7 +236,6 @@ button { cursor: pointer; font-family: 'Outfit', system-ui, sans-serif; }
 .btn-sm { min-height: 28px; padding: 3px 10px; font-size: 0.8125rem; }
 .btn-lg { min-height: 40px; padding: 8px 20px; font-size: 0.9375rem; }
 
-/* Button spinner */
 .btn-spinner {
   width: 14px; height: 14px;
   border: 2px solid rgba(255,255,255,0.35);
@@ -257,7 +245,6 @@ button { cursor: pointer; font-family: 'Outfit', system-ui, sans-serif; }
   display: inline-block;
 }
 
-/* ── Status badges — used by bookings.js ───────────────────────────────────── */
 .badge,
 .status-badge {
   display: inline-flex;
@@ -279,7 +266,6 @@ button { cursor: pointer; font-family: 'Outfit', system-ui, sans-serif; }
 .badge-available                       { background: var(--success-light); color: var(--success); border-color: rgba(26,127,55,0.25); }
 .badge-booked                          { background: var(--warning-light); color: var(--warning); border-color: rgba(154,103,0,0.25); }
 
-/* ── Forms — used in JS-injected templates ─────────────────────────────────── */
 .form-group {
   display: flex;
   flex-direction: column;
@@ -319,7 +305,6 @@ select.form-control { cursor: pointer; }
 .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .form-grid-2 .span-2 { grid-column: 1 / -1; }
 
-/* ── Tables — used by JS-injected templates ────────────────────────────────── */
 .table-wrapper {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -350,7 +335,6 @@ tbody tr:hover           { background: var(--surface-hover); }
 .table-actions { white-space: nowrap; }
 .table-actions .btn + .btn { margin-left: 4px; }
 
-/* ── Spinner & skeleton ─────────────────────────────────────────────────────── */
 .spinner {
   width: 24px; height: 24px;
   border: 2px solid var(--border);
@@ -367,7 +351,6 @@ tbody tr:hover           { background: var(--surface-hover); }
   border-radius: var(--radius-sm);
 }
 
-/* ── Alerts ─────────────────────────────────────────────────────────────────── */
 .alert {
   padding: 10px 14px;
   border-radius: var(--radius-md);
@@ -380,7 +363,6 @@ tbody tr:hover           { background: var(--surface-hover); }
 .alert-info    { background: var(--accent-light);  border-color: rgba(9,105,218,0.3);   color: var(--accent-dark); }
 .alert-warning { background: var(--warning-light); border-color: rgba(154,103,0,0.3);   color: #6b4700; }
 
-/* ── Toasts — used by auth.js ───────────────────────────────────────────────── */
 .toast-container {
   position: fixed;
   bottom: calc(14px + env(safe-area-inset-bottom));
@@ -413,7 +395,6 @@ tbody tr:hover           { background: var(--surface-hover); }
 .toast__close       { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1rem; padding: 0; line-height: 1; min-height: auto; margin-left: 4px; }
 .toast__close:hover { color: var(--text-primary); }
 
-/* ── Modals ──────────────────────────────────────────────────────────────────── */
 .modal-overlay,
 .booking-modal-overlay {
   position: fixed; inset: 0;
@@ -469,7 +450,6 @@ tbody tr:hover           { background: var(--surface-hover); }
   line-height: 1.5;
 }
 
-/* ── Filter pills — JS adds/removes .active ────────────────────────────────── */
 .filter-pill {
   flex-shrink: 0;
   white-space: nowrap;
@@ -490,7 +470,6 @@ tbody tr:hover           { background: var(--surface-hover); }
 .filter-pill:hover  { border-color: var(--accent); color: var(--accent); }
 .filter-pill.active { background: var(--accent-light); color: var(--accent); border-color: rgba(9,105,218,0.4); font-weight: 600; }
 
-/* ── Cancel confirm / reschedule rows — JS-injected ───────────────────────── */
 .cancel-confirm-row {
   background: var(--warning-light);
   border-top: 1px solid rgba(154,103,0,0.2);
@@ -517,7 +496,6 @@ tbody tr:hover           { background: var(--surface-hover); }
   align-items: flex-end;
 }
 
-/* ── Empty state ───────────────────────────────────────────────────────────── */
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -530,7 +508,6 @@ tbody tr:hover           { background: var(--surface-hover); }
 .empty-state h3    { font-size: 0.9375rem; color: var(--text-primary); font-weight: 600; margin-bottom: 6px; }
 .empty-state p     { color: var(--text-muted); font-size: 0.875rem; margin-bottom: 16px; }
 
-/* ── Pagination — JS-injected ──────────────────────────────────────────────── */
 .pagination {
   display: flex;
   align-items: center;
@@ -543,7 +520,6 @@ tbody tr:hover           { background: var(--surface-hover); }
 .pagination-controls { display: flex; align-items: center; gap: 6px; }
 .pagination-pages    { font-size: 0.875rem; color: var(--text-secondary); font-weight: 500; padding: 0 4px; }
 
-/* ── Bookings controls bar (admin) ─────────────────────────────────────────── */
 .bookings-controls {
   display: flex;
   flex-wrap: wrap;
@@ -555,7 +531,6 @@ tbody tr:hover           { background: var(--surface-hover); }
 .bookings-controls .form-control  { flex: 1; min-width: 160px; max-width: 280px; min-height: 34px; padding: 5px 10px; }
 .bookings-count { font-size: 0.8125rem; color: var(--text-muted); white-space: nowrap; margin-left: auto; }
 
-/* ── Station list items — JS adds/removes .selected ───────────────────────── */
 .station-item {
   background: var(--surface-1);
   border: 1px solid var(--border);
@@ -574,7 +549,6 @@ tbody tr:hover           { background: var(--surface-hover); }
 .station-name          { font-weight: 600; font-size: 0.875rem; color: var(--text-primary); }
 .station-addr          { font-size: 0.8125rem; color: var(--text-muted); margin-top: 1px; }
 
-/* ── Booked badge — stations.js ─────────────────────────────────────────────── */
 .booked-badge {
   display: inline-flex;
   align-items: center;
@@ -588,7 +562,6 @@ tbody tr:hover           { background: var(--surface-hover); }
   margin: 2px 3px;
 }
 
-/* ── Week-day strip — stations.js ───────────────────────────────────────────── */
 .week-strip { display: flex; gap: 4px; flex-wrap: wrap; }
 .week-day-btn {
   display: flex;
@@ -614,7 +587,6 @@ tbody tr:hover           { background: var(--surface-hover); }
 .dot-free { background: var(--success); }
 .dot-busy { background: var(--warning); }
 
-/* ── Admin section/tab — JS adds/removes .active ───────────────────────────── */
 .admin-section        { display: none; }
 .admin-section.active { display: block; }
 
@@ -639,10 +611,8 @@ tbody tr:hover           { background: var(--surface-hover); }
 .admin-tab:hover  { color: var(--text-primary); }
 .admin-tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
 
-/* centered content wrapper inside admin panel */
 .admin-inner { width: 100%; max-width: 860px; margin: 0 auto; }
 
-/* ── Connector panel back button ───────────────────────────────────────────── */
 .panel-back-btn {
   background: none; border: none;
   color: var(--text-muted); cursor: pointer;
@@ -651,7 +621,6 @@ tbody tr:hover           { background: var(--surface-hover); }
 }
 .panel-back-btn:hover { color: var(--accent); }
 
-/* ── Map popup — map.js ─────────────────────────────────────────────────────── */
 .map-popup { padding: 12px 14px; min-width: 160px; font-family: 'Outfit', system-ui, sans-serif; }
 .map-popup__name { font-weight: 600; color: var(--text-primary); font-size: 0.875rem; margin-bottom: 3px; }
 .map-popup__addr { font-size: 0.8125rem; color: var(--text-secondary); margin-bottom: 8px; }
@@ -677,7 +646,6 @@ tbody tr:hover           { background: var(--surface-hover); }
 .popup-busy-tag { background: var(--warning-light); color: var(--warning); border-color: rgba(154,103,0,0.25); }
 .popup-free-tag { background: var(--success-light); color: var(--success); border-color: rgba(26,127,55,0.25); }
 
-/* ── Map marker — map.js ────────────────────────────────────────────────────── */
 .marker-pin {
   position: relative;
   width: 32px; height: 32px;
@@ -702,7 +670,6 @@ tbody tr:hover           { background: var(--surface-hover); }
   pointer-events: none;
 }
 
-/* ── Leaflet overrides ─────────────────────────────────────────────────────── */
 .leaflet-popup-content-wrapper {
   border-radius: var(--radius-md) !important;
   box-shadow: var(--shadow-md) !important;
@@ -713,7 +680,6 @@ tbody tr:hover           { background: var(--surface-hover); }
 .leaflet-popup-tip     { display: none !important; }
 .leaflet-popup-tip-container { display: none !important; }
 
-/* ── Password toggle ───────────────────────────────────────────────────────── */
 .password-wrapper { position: relative; }
 .password-wrapper .form-control { padding-right: 40px; }
 .password-toggle {
@@ -725,7 +691,6 @@ tbody tr:hover           { background: var(--surface-hover); }
 }
 .password-toggle:hover { color: var(--text-primary); }
 
-/* ── Responsive: tablet (768px+) ───────────────────────────────────────────── */
 @media (min-width: 768px) {
   .nav-hamburger { display: none; }
   .nav-links {
@@ -749,7 +714,6 @@ tbody tr:hover           { background: var(--surface-hover); }
   .toast           { max-width: 340px; animation: slideInRight 0.25s ease; }
 }
 
-/* ── Mobile modals (bottom sheet) ──────────────────────────────────────────── */
 @media (max-width: 767px) {
   .modal-overlay.open,
   .booking-modal-overlay.open { align-items: flex-end; }

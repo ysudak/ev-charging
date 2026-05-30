@@ -19,14 +19,6 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * core booking business logic.
- *
- * concurrency: createBooking uses a pessimistic write lock (SELECT FOR UPDATE)
- * via findConflictingBookingsForLock. this blocks other transactions from reading
- * the same rows until we commit, so two simultanious requests cant both see
- * "no conflict" and create overlapping bookings at the same time.
- */
 @Service
 public class BookingService {
 
@@ -44,7 +36,6 @@ public class BookingService {
         this.userService = userService;
     }
 
-    /** returns all booked time slots for a connector on given date, doesnt expose any user info */
     @Transactional(readOnly = true)
     public List<BookedTimeResponse> getBookedTimes(Long connectorId, LocalDate date) {
         return bookingRepository.findConfirmedByConnectorAndDate(connectorId, date)
@@ -62,13 +53,11 @@ public class BookingService {
 
         User user = userService.getEntityByUsername(username);
 
-        // admins manage the system, they dont make bookings
         if (user.getRole() == User.Role.ADMIN) {
             throw new IllegalArgumentException("Administrators cannot make reservations.");
         }
         Connector connector = connectorService.getEntity(req.connectorId());
 
-        // pessimistic lock so two concurrent requests dont both sneak through
         List<Booking> connectorConflicts = bookingRepository.findConflictingBookingsForLock(
                 connector.getId(), req.bookingDate(), req.startTime(), req.endTime());
         if (!connectorConflicts.isEmpty()) {
@@ -76,7 +65,6 @@ public class BookingService {
                     "This connector already has a booking during the requested time slot.");
         }
 
-        // also make sure the driver doesnt already have an overlapping booking at another station
         List<Booking> driverConflicts = bookingRepository.findDriverOverlappingBookings(
                 user.getId(), req.bookingDate(), req.startTime(), req.endTime());
         if (!driverConflicts.isEmpty()) {
@@ -98,7 +86,6 @@ public class BookingService {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found: " + bookingId));
 
-        // drivers can only cancel their own bookings
         if (!isAdmin && !booking.getUser().getUsername().equals(username)) {
             throw new org.springframework.security.access.AccessDeniedException(
                     "You can only cancel your own bookings.");
@@ -153,7 +140,6 @@ public class BookingService {
             throw new IllegalArgumentException("Cannot reschedule a past booking.");
         }
 
-        // mark the old one cancelled then create a new booking on the same connector
         Long connectorId = booking.getConnector().getId();
         booking.setStatus(Booking.Status.CANCELLED);
         bookingRepository.save(booking);

@@ -1,15 +1,3 @@
-/**
- * shared booking table utilities, used by dashboard, bookings and admin pages.
- */
-
-/**
- * renders a table of bookings as an html string.
- * @param {Array}   bookings       - array of booking objects from the api
- * @param {boolean} showCancel     - whether to show the action buttons column
- * @param {boolean} showUser       - show username column, for admin view
- * @param {boolean} showReschedule - show reschedule button on drivers own bookings
- * @returns {string} html string
- */
 function renderBookingsTable(bookings, showCancel, showUser = false, showReschedule = false) {
   const rows = bookings.map(b => {
     const statusClass   = b.status === 'CANCELLED'  ? 'status-cancelled'
@@ -61,16 +49,10 @@ function renderBookingsTable(bookings, showCancel, showUser = false, showResched
   `;
 }
 
-/**
- * returns a styled empty state message when theres nothing to show
- */
 function emptyState(msg) {
   return `<div class="loading-msg" style="color:var(--text-muted);">${msg}</div>`;
 }
 
-/**
- * returns true if the date string is before today
- */
 function isPast(dateStr) {
   return new Date(dateStr) < new Date(new Date().toDateString());
 }

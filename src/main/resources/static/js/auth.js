@@ -1,9 +1,3 @@
-/**
- * auth helpers shared across all pages.
- * buildNav() is called on every page to keep the navbar consistent.
- * showToast() is used everywhere instead of alert().
- */
-
 function requireAuth() {
   const raw = sessionStorage.getItem('user');
   if (!raw) { window.location.href = '/login.html'; throw new Error('Not authenticated'); }
@@ -16,15 +10,6 @@ function requireAdmin() {
   return user;
 }
 
-/**
- * builds the navbar links into the element with given id.
- * drivers see: Dashboard | Stations | My Bookings
- * admins see:  Stations  | Admin Panel
- * guests see:  Stations  | Sign In
- *
- * @param {string} containerId  id of the ul element to populate
- * @param {string} currentPath  e.g. '/stations.html', used to set the active link
- */
 function buildNav(containerId, currentPath) {
   const nav = document.getElementById(containerId);
   if (!nav) return;
@@ -71,16 +56,7 @@ function esc(str) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-/* toast notification system */
-
-/**
- * shows a toast notification in the corner of the screen.
- * @param {string} message
- * @param {'success'|'error'|'warning'|'info'} type
- * @param {number} duration  ms before it dismisses itself, default 4000
- */
 function showToast(message, type = 'success', duration = 4000) {
-  // Lazily create container if it doesn't exist
   let container = document.querySelector('.toast-container');
   if (!container) {
     container = document.createElement('div');

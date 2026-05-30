@@ -1,9 +1,3 @@
-/**
- * admin page logic.
- * loads all users, all bookings, and handles station and connector management.
- * all api calls here require admin role, enforced on the server side to.
- */
-
 const PAGE_SIZE = 10;
 let allAdminBookings = [];
 let adminPage   = 1;
@@ -24,7 +18,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('refresh-bookings-btn').addEventListener('click', loadAllBookings);
   document.getElementById('add-connector-btn').addEventListener('click', addConnector);
 
-  // filter pills
   document.querySelectorAll('[data-bstatus]').forEach(pill => {
     pill.addEventListener('click', () => {
       document.querySelectorAll('[data-bstatus]').forEach(p => p.classList.remove('active'));
@@ -35,7 +28,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // search input, debounced so it doesnt fire on every keystroke
   let searchTimer;
   document.getElementById('bookings-search').addEventListener('input', e => {
     clearTimeout(searchTimer);
@@ -50,8 +42,6 @@ document.addEventListener('DOMContentLoaded', () => {
   loadAllBookings();
   loadAllUsers();
 });
-
-/* stats */
 
 async function loadStats() {
   try {
@@ -70,8 +60,6 @@ async function loadStats() {
     console.error('Stats load failed', e);
   }
 }
-
-/* bookings - filter, search and pagination */
 
 function loadAllBookings() {
   const container = document.getElementById('all-bookings-container');
@@ -192,8 +180,6 @@ function attachAdminCancelListeners() {
   });
 }
 
-/* users */
-
 function loadAllUsers() {
   const container = document.getElementById('users-container');
   API.get('/api/admin/users').then(users => {
@@ -216,8 +202,6 @@ function loadAllUsers() {
     container.innerHTML = '<div class="alert alert-error">Failed to load users.</div>';
   });
 }
-
-/* station crud */
 
 function resetStationForm() {
   document.getElementById('stn-edit-id').value = '';
@@ -279,7 +263,6 @@ async function saveStation() {
 async function deleteStation(id, name) {
   document.querySelectorAll('.admin-cancel-confirm').forEach(r => r.remove());
 
-  // find the row for this station so we can insert the inline confirm row below it
   const rows = document.querySelectorAll('#stations-table-container tbody tr');
   let targetRow = null;
   rows.forEach(row => {
@@ -309,7 +292,6 @@ async function deleteStation(id, name) {
       delete document.getElementById('stations-table-container').dataset.loaded;
       loadStationsList(true);
       loadStats();
-      // close the connector panel if it was showing this station
       if (document.getElementById('conn-station-id').value == id) {
         document.getElementById('connector-mgmt-panel').style.display = 'none';
       }
@@ -319,8 +301,6 @@ async function deleteStation(id, name) {
     }
   });
 }
-
-/* connector management */
 
 function openConnectorMgmt(stationId, stationName) {
   document.getElementById('conn-station-id').value = stationId;
@@ -391,7 +371,6 @@ function editConnectorInline(connId, currentType, currentPower) {
   const row = document.getElementById(`conn-row-${connId}`);
   if (!row) return;
 
-  // swap the display cells out for input fields
   row.querySelector(`#conn-type-cell-${connId}`).innerHTML =
     `<select class="form-control" id="edit-conn-type-${connId}" style="padding:4px 8px; height:32px;">
        <option value="Type 2"${currentType==='Type 2'?' selected':''}>Type 2</option>

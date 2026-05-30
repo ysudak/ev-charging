@@ -19,11 +19,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     List<Booking> findAllByOrderByBookingDateDescStartTimeDesc();
 
-    /**
-     * pessimistic write lock so two concurrent requests dont both see zero conflicts
-     * and create overlapping bookings at the same time. any transaction trying to
-     * read these rows will block until the first one commits or rolls back.
-     */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT b FROM Booking b WHERE b.connector.id = :connectorId " +
            "AND b.bookingDate = :date " +
@@ -36,7 +31,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             @Param("startTime") LocalTime startTime,
             @Param("endTime") LocalTime endTime);
 
-    /** all confirmed bookings for a connector on given date, used to show occupied times in the ui */
     @Query("SELECT b FROM Booking b WHERE b.connector.id = :connectorId " +
            "AND b.bookingDate = :date " +
            "AND b.status = 'CONFIRMED' " +
@@ -45,7 +39,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             @Param("connectorId") Long connectorId,
             @Param("date") LocalDate date);
 
-    /** checks if the driver already has an overlapping booking somewhere else */
     @Query("SELECT b FROM Booking b WHERE b.user.id = :userId " +
            "AND b.bookingDate = :date " +
            "AND b.status = 'CONFIRMED' " +
@@ -57,11 +50,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             @Param("startTime") LocalTime startTime,
             @Param("endTime") LocalTime endTime);
 
-    /** finds CONFIRMED bookings whose date is before today, ready to be marked COMPLETED */
     @Query("SELECT b FROM Booking b WHERE b.status = 'CONFIRMED' AND b.bookingDate < :today")
     List<Booking> findPastConfirmedBookings(@Param("today") LocalDate today);
 
-    /** returns [stationId, count] pairs for all confirmed bookings on a given date, one row per station */
     @Query("SELECT b.connector.station.id, COUNT(b) FROM Booking b " +
            "WHERE b.bookingDate = :date AND b.status = 'CONFIRMED' " +
            "GROUP BY b.connector.station.id")

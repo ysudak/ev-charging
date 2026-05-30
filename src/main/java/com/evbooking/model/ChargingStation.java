@@ -12,10 +12,6 @@ import lombok.Setter;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * A physical EV charging station with GPS coordinates.
- * One station has many connectors.
- */
 @Entity
 @Table(name = "charging_stations",
         uniqueConstraints = @UniqueConstraint(columnNames = "name"))

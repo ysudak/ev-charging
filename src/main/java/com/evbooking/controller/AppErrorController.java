@@ -7,11 +7,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-/**
- * Replaces the default Whitelabel error page.
- * Browser requests (Accept: text/html) are redirected to the main page.
- * API requests keep the standard Spring error JSON response.
- */
 @Controller
 public class AppErrorController implements ErrorController {
 

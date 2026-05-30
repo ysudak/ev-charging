@@ -9,9 +9,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 
-/**
- * An individual charging port within a station (e.g. Type 2, CCS, CHAdeMO).
- */
 @Entity
 @Table(name = "connectors")
 @Getter

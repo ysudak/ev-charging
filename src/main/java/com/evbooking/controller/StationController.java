@@ -11,10 +11,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * public GET endpoints for station info, used by the map.
- * anything that modifies data requires admin role.
- */
 @RestController
 @RequestMapping("/api/stations")
 public class StationController {

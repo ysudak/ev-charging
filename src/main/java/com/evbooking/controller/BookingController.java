@@ -13,10 +13,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * driver facing booking endpoints.
- * each driver can only see and manage there own bookings.
- */
 @RestController
 @RequestMapping("/api/bookings")
 public class BookingController {

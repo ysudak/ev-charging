@@ -1,15 +1,6 @@
-/**
- * initialises the leaflet.js map centred on thessaloniki.
- * uses cartodb positron light tiles and custom svg lightning-bolt markers.
- *
- * exports:
- *   initMap(onMarkerClick) - creates the map, loads stations and places markers.
- *   highlightMarker(stationId) - pans to and opens the popup for a given station.
- */
-
 let mapInstance = null;
-const markerMap  = {};   // stationId → Leaflet marker
-const busyMap    = {};   // stationId → boolean (has bookings today)
+const markerMap  = {};
+const busyMap    = {};
 let activeMarkerId = null;
 
 function initMap(onMarkerClick) {
@@ -17,7 +8,6 @@ function initMap(onMarkerClick) {
 
   mapInstance = L.map('map', { zoomControl: true }).setView([40.6401, 22.9444], 13);
 
-  // cartodb positron tiles - clean and light, matches the apps colour scheme
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CartoDB</a>',
     subdomains: 'abcd',
@@ -101,7 +91,6 @@ function highlightMarker(stationId) {
   }
 }
 
-// called by the "view details" button inside the leaflet popup, wich is rendered as raw html so it needs a global function
 function onMapStationClick(stationId) {
   if (typeof handleStationSelect === 'function') {
     handleStationSelect(stationId);
